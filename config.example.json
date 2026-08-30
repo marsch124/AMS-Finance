@@ -1,0 +1,12 @@
+{
+  "port": 7780,
+  "vaultName": "YOUR OBSIDIAN VAULT NAME",
+  "vaultPath": "~/Obsidian/YOUR VAULT",
+  "budgetingPath": "~/Documents/path/to/your/Budgeting folder",
+  "workbookFile": "Your Budget Workbook.xlsx",
+  "weeklyFile": "Your Weekly Follow-up.xlsx",
+  "budgetSheet": "AMS Main Budget",
+  "firstMonth": "2026-03",
+  "dashSpendUrl": "https://claude.ai/code/artifact/YOUR-MONTHLY-SPEND-DASHBOARD",
+  "dashBudgetUrl": "https://claude.ai/code/artifact/YOUR-MAIN-FINANCE-DASHBOARD"
+}

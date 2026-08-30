@@ -1,0 +1,9 @@
+# personal data & settings — never published
+config.json
+checklist.json
+*.log
+.DS_Store
+
+# built app bundles — rebuild from the .applescript sources (see README)
+AMS Finance.app/
+AMS Finance Engine.app/

@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AMS Finance Hub</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='1' y='1' width='30' height='30' rx='8' fill='%23e5dcf2'/%3E%3Cg fill='none' stroke='%23241d44' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.2 9.2l-1.4-2.6 8.4-.2-1.5 2.7'/%3E%3Cpath d='M13.1 9.1q-5.4 3.7-5.6 9.6-.1 5.3 8.4 5.3 8.3 0 8-5.5-.3-5.9-5.6-9.4z' fill='%23ffffff' fill-opacity='.6'/%3E%3Cpath d='M18.5 14.4q-2.6-1.1-3.9.6t1.7 2.6q3 .7 2 2.7-1.2 1.6-3.8.4' stroke='%23177368'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #ebe5f4;
+    --card: #ffffff;
+    --ink: #241d44;
+    --muted: #6f6b90;
+    --line: #e3ddef;
+    --accent: #177368;
+    --accent-dark: #125c53;
+    --accent-soft: #e4f1ee;
+    --ok: #1c8a5f;
+    --ok-soft: #e3f3ec;
+    --warn: #b07c14;
+    --warn-soft: #fdf2d9;
+    --miss: #c14f38;
+    --miss-soft: #fbe9e5;
+    --idle: #9c9ab8;
+    --idle-soft: #efecf6;
+    --shadow: 0 1px 2px rgba(52,36,96,.07), 0 6px 18px rgba(52,36,96,.07);
+  }
+  * { box-sizing: border-box; }
+  html { background: #e5ddf1; }
+  body {
+    margin: 0; color: var(--ink);
+    /* lilac canvas: faint hand-drawn coins & sparkles over a soft lavender wash */
+    background-color: var(--bg);
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='170' height='170'><g fill='none' stroke='%23dcd2ec' stroke-width='1.4' stroke-linecap='round'><path d='M30 24q8 .3 8.3 8.2-.3 7.8-8.4 8-7.8-.3-8-8.1.2-7.8 8.1-8.1z'/><path d='M26.6 32.4l7-.2'/><path d='M96 108q4.2-3.2 8.4-.2t8.2-.4'/><path d='M136 30l.2 9M131.6 34.6l9-.2'/><path d='M62 132q5 .2 5.2 5-.2 4.8-5.3 5-4.9-.2-5-5 .1-4.8 5.1-5z'/><path d='M118 74l.15 6M115.1 77l6-.15'/></g></svg>"),
+      radial-gradient(1100px 520px at 78% -8%, #f4f0fb 0%, rgba(244,240,251,0) 60%),
+      linear-gradient(180deg, #eee9f7 0%, #e5ddf1 100%);
+    font: 13.5px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 22px 22px 48px; }
+
+  .headcard { padding: 14px 18px 12px; margin-bottom: 12px; }
+
+  /* KPI cards — last reported month's numbers */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 10px; margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+         box-shadow: var(--shadow); padding: 10px 14px 9px; }
+  .kpi .klabel { font-size: 9.5px; text-transform: uppercase; letter-spacing: .1em;
+                 color: var(--muted); font-weight: 600; }
+  .kpi .kvalue { font-size: 21px; font-weight: 800; letter-spacing: -.02em; margin-top: 1px; }
+  .kpi .kvalue.pos { color: var(--ok); }
+  .kpi .kvalue.neg { color: var(--miss); }
+  .kpi .ksub { font-size: 10.5px; color: var(--muted); margin-top: 1px; }
+
+  .stale { background: var(--warn-soft); color: var(--warn); border-radius: 999px;
+           padding: 1px 8px; font-size: 10px; font-weight: 700; margin-left: 6px;
+           display: inline-block; white-space: nowrap; }
+  .overall.duenow { background: var(--warn); color: #fff; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: 11px;
+             font-weight: 600; color: var(--muted); margin-bottom: 2px; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 26px; margin: 0; letter-spacing: -.03em; font-weight: 800; }
+  h1 .accent { color: var(--accent); }
+  .headright { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .today { color: var(--muted); font-size: 12px; }
+  button.refresh {
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    border-radius: 999px; padding: 4px 13px; font-size: 12px; cursor: pointer; font-weight: 600;
+  }
+  button.refresh:hover { border-color: var(--accent); color: var(--accent); }
+
+  .layout { display: flex; gap: 18px; align-items: flex-start; }
+  main.col { flex: 1; min-width: 0; }
+  aside.panel { width: 292px; flex-shrink: 0; position: sticky; top: 16px; }
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    aside.panel { width: 100%; position: static; }
+  }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+          box-shadow: var(--shadow); }
+  .cardhead { padding: 12px 16px 8px; }
+  .cardtitle { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+  .cardsub { color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em;
+       color: var(--muted); margin: 18px 0 8px; font-weight: 600; }
+
+  /* month status board */
+  .mrow { display: flex; align-items: center; gap: 12px; padding: 8px 16px;
+          border-top: 1px solid var(--line); }
+  .mrow.clickable { cursor: pointer; }
+  .mrow.clickable:hover { background: var(--accent-soft); }
+  .mname { width: 108px; font-weight: 700; font-size: 13px; }
+  .mname small { display: block; font-weight: 400; color: var(--muted); font-size: 10.5px; }
+  .checks { display: grid; grid-template-columns: repeat(4, 96px); gap: 6px; }
+  .chip { display: inline-flex; align-items: center; justify-content: center;
+          border-radius: 999px; padding: 3px 0; width: 100%; }
+  .chip .hicon { width: 12px; height: 12px; margin: 0; }
+  .chip.on .hicon { color: var(--ok); }
+  .chip.off .hicon { color: var(--miss); }
+  .chip.idle .hicon { color: var(--idle); }
+  /* spreadsheet-style header row over the status columns */
+  .mhead { display: flex; align-items: center; gap: 12px; padding: 7px 16px 5px;
+           border-top: 1px solid var(--line); }
+  .mhead .mname { font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
+                  color: var(--muted); font-weight: 600; }
+  .mhead .checks .colhead { font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
+                            color: var(--muted); font-weight: 600; text-align: center;
+                            cursor: help; white-space: nowrap; min-width: 0; }
+  .mhead .stathead { margin-left: auto; font-size: 10px; text-transform: uppercase;
+                     letter-spacing: .1em; color: var(--muted); font-weight: 600; cursor: help; }
+  /* instant styled tooltips (Safari won't show native title= reliably) */
+  [data-tip] { position: relative; }
+  [data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute; top: calc(100% + 7px); left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 5px 10px; border-radius: 7px;
+    font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none;
+    white-space: nowrap; z-index: 30; pointer-events: none; box-shadow: var(--shadow);
+  }
+  [data-tip]:hover::before {
+    content: ""; position: absolute; top: calc(100% + 2px); left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 8px; height: 8px; background: var(--ink); z-index: 31; pointer-events: none;
+  }
+  .stathead[data-tip]:hover::after { left: auto; right: 0; transform: none; }
+  @media (max-width: 700px) {
+    .checks { grid-template-columns: repeat(4, 52px); }
+    .mhead .checks .colhead { font-size: 8px; letter-spacing: 0; }
+    .mname { width: 84px; }
+  }
+  .chip.on  { background: var(--ok-soft); }
+  .chip.off { background: var(--miss-soft); }
+  .chip.idle { background: var(--idle-soft); }
+  .overall { margin-left: auto; font-size: 11.5px; font-weight: 700; border-radius: 999px;
+             padding: 3px 12px; white-space: nowrap; }
+  .overall.done { background: var(--accent); color: #fff; }
+  .overall.part { background: var(--warn-soft); color: var(--warn); }
+  .overall.due  { border: 1px solid var(--line); color: var(--muted); background: var(--card); }
+
+  .err { background: var(--miss-soft); color: var(--miss); border-radius: 10px;
+         padding: 8px 12px; font-size: 12px; margin-bottom: 12px; display: none; }
+
+  /* shortcut tiles */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          box-shadow: var(--shadow); padding: 10px 12px; cursor: pointer;
+          transition: border-color .12s, transform .12s;
+          display: flex; gap: 10px; align-items: flex-start; }
+  .tile:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .tile:hover .hicon { color: var(--accent); }
+  .tile .name { font-weight: 700; font-size: 12.5px; line-height: 1.25; }
+  .tile .meta { color: var(--muted); font-size: 10.5px; margin-top: 2px; line-height: 1.35; }
+  .tile.big { grid-column: span 2; }
+  @media (max-width: 480px) { .tile.big { grid-column: span 1; } }
+
+  /* per-section colour families */
+  .sec-dash    { --sec: #177368; --sec-soft: #e3f2ed; --sec-line: #c6e2d9; }
+  .sec-files   { --sec: #9c6d0e; --sec-soft: #faf0da; --sec-line: #eadcb2; }
+  .sec-notes   { --sec: #6d4fc4; --sec-soft: #eee9fb; --sec-line: #d9ccf3; }
+  .sec-folders { --sec: #2e6bb8; --sec-soft: #e5eefa; --sec-line: #c9dcf1; }
+  h2[class*="sec-"] { color: var(--sec); }
+  .grid[class*="sec-"] .tile { background: var(--sec-soft); border-color: var(--sec-line); }
+  .grid[class*="sec-"] .tile .hicon { color: var(--sec); }
+  .grid[class*="sec-"] .tile:hover { border-color: var(--sec); }
+  .grid[class*="sec-"] .tile:hover .hicon { color: var(--sec); }
+
+  .hicon { width: 26px; height: 26px; flex-shrink: 0; color: var(--ink);
+           transition: color .12s; margin-top: 1px; }
+
+  /* checklist panel */
+  .chk .cardhead { display: flex; align-items: flex-start; gap: 9px; padding-bottom: 10px; }
+  .chk .cardhead .hicon { color: var(--accent); width: 24px; height: 24px; }
+  .chk .cardhead .grow { flex: 1; }
+  .iconbtn { border: none; background: none; padding: 2px; cursor: pointer; color: var(--muted);
+             border-radius: 6px; display: inline-flex; }
+  .iconbtn:hover { color: var(--accent); background: var(--accent-soft); }
+  .iconbtn:disabled { opacity: .3; pointer-events: none; }
+  .iconbtn .hicon { width: 17px; height: 17px; margin: 0; }
+  .chksettings { padding: 8px 16px; border-top: 1px solid var(--line); font-size: 12px;
+                 color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .chksettings select { font-size: 12px; border: 1px solid var(--line); border-radius: 6px; padding: 2px 4px; }
+  .chksettings button { border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+                        padding: 2px 10px; font-size: 11px; cursor: pointer; color: var(--ink); }
+  .chksettings button:hover { border-color: var(--accent); color: var(--accent); }
+
+  .citem { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 14px;
+           border-top: 1px solid var(--line); }
+  .citem .cnum { width: 16px; text-align: right; font-size: 11px; font-weight: 700;
+                 color: var(--muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .citem.done .cnum { color: var(--idle); }
+  .citem .cauto { display: inline-block; margin-left: 4px; color: var(--idle);
+                  vertical-align: -1px; cursor: help; }
+  .citem .cauto .hicon { width: 11px; height: 11px; margin: 0; }
+  .citem .cbox { border: none; background: none; padding: 0; cursor: pointer;
+                 color: var(--muted); display: inline-flex; flex-shrink: 0; }
+  .citem .cbox .hicon { width: 19px; height: 19px; margin: 0; }
+  .citem.done .cbox { color: var(--accent); }
+  .citem .ctext { flex: 1; font-size: 12.5px; line-height: 1.3; cursor: default; padding: 2px 0; }
+  .citem.done .ctext { color: var(--idle); }
+  .citem .cbtns { display: none; gap: 1px; }
+  .citem:hover .cbtns { display: inline-flex; }
+  .citem .cbtns .hicon { width: 14px; height: 14px; }
+  .citem input.editfield { flex: 1; font-size: 12.5px; border: 1px solid var(--accent);
+                           border-radius: 6px; padding: 2px 6px; outline: none; min-width: 0; }
+  .chkadd { display: flex; gap: 6px; padding: 10px 12px 12px; border-top: 1px solid var(--line); }
+  .chkadd input { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px;
+                  font-size: 12.5px; outline: none; min-width: 0; }
+  .chkadd input:focus { border-color: var(--accent); }
+  .chkadd .iconbtn { border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; }
+  .chkadd .iconbtn .hicon { width: 15px; height: 15px; }
+  .chkempty { padding: 14px 16px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); }
+
+  /* How this works — collapsible guide */
+  .guide { margin-top: 28px; }
+  .guide details { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+                   box-shadow: var(--shadow); margin-bottom: 8px; }
+  .guide summary { padding: 11px 16px; font-weight: 700; font-size: 13.5px; cursor: pointer;
+                   display: flex; align-items: center; gap: 9px; list-style: none; }
+  .guide summary::-webkit-details-marker { display: none; }
+  .guide summary::before { content: ""; width: 0; height: 0; flex-shrink: 0;
+                           border-left: 6px solid var(--accent); border-top: 5px solid transparent;
+                           border-bottom: 5px solid transparent; transition: transform .15s; }
+  .guide details[open] summary::before { transform: rotate(90deg); }
+  .gbody { padding: 0 18px 14px 31px; font-size: 12.5px; line-height: 1.6; }
+  .gbody p { margin: 6px 0; }
+  .gbody ul, .gbody ol { margin: 6px 0; padding-left: 18px; }
+  .gbody li { margin: 3px 0; }
+  .gbody b { font-weight: 700; }
+  .gex { background: var(--accent-soft); border-left: 3px solid var(--accent);
+         border-radius: 8px; padding: 8px 12px; margin: 9px 0; }
+  .gex .gextitle { font-weight: 700; font-size: 11px; text-transform: uppercase;
+                   letter-spacing: .08em; color: var(--accent); margin-bottom: 3px; }
+  .gbody dl { margin: 6px 0; }
+  .gbody dt { font-weight: 700; margin-top: 8px; }
+  .gbody dd { margin: 1px 0 0 0; color: var(--muted); }
+  .gver { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  .gver td { padding: 5px 8px 5px 0; vertical-align: top; border-top: 1px solid var(--line);
+             font-size: 12px; }
+  .gver td:first-child { font-weight: 700; white-space: nowrap; width: 42px; }
+  /* the two reference chapters pop in their own colours */
+  .guide details.gviolet { background: #efe9fb; border-color: #d7c9f1; }
+  .guide details.gviolet summary { color: #6d4fc4; }
+  .guide details.gviolet summary::before { border-left-color: #6d4fc4; }
+  .guide details.gteal { background: #e3f2ee; border-color: #c2e0d7; }
+  .guide details.gteal summary { color: var(--accent); }
+  .guide details.gteal summary::before { border-left-color: var(--accent); }
+  .guidehead { display: flex; align-items: center; gap: 12px; }
+  .guidehead h2 { margin: 18px 0 8px; }
+  .guidehead .gtoggle { margin-left: auto; border: 1px solid var(--line); background: var(--card);
+                        color: var(--ink); border-radius: 999px; padding: 3px 12px; font-size: 11.5px;
+                        font-weight: 600; cursor: pointer; }
+  .guidehead .gtoggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+           background: var(--ink); color: #fff; border-radius: 999px; padding: 7px 18px;
+           font-size: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: .92; }
+
+  footer { margin-top: 34px; color: var(--muted); font-size: 11px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card headcard">
+    <div class="eyebrow">Anna &amp; Martin · Monthly finance reporting</div>
+    <header>
+      <h1>AMS Finance Hub <span class="accent" id="curmonth"></span></h1>
+      <div class="headright">
+        <div class="today" id="today"></div>
+        <button class="refresh" onclick="load()">↻ Refresh</button>
+      </div>
+    </header>
+  </div>
+  <div class="kpis" id="kpis" style="display:none"></div>
+  <div class="err" id="err"></div>
+
+  <div class="layout">
+    <main class="col">
+      <div class="card">
+        <div class="cardhead">
+          <div class="cardtitle">Monthly reporting status</div>
+        </div>
+        <div id="months"></div>
+      </div>
+
+      <h2 class="sec-dash">Dashboards</h2>
+      <div class="grid sec-dash" id="dashboards"></div>
+
+      <h2 class="sec-files">Budget files</h2>
+      <div class="grid sec-files" id="files"></div>
+
+      <h2 class="sec-notes">Obsidian notes</h2>
+      <div class="grid sec-notes" id="notes"></div>
+
+      <h2 class="sec-folders">Folders</h2>
+      <div class="grid sec-folders" id="folders"></div>
+    </main>
+
+    <aside class="panel">
+      <div class="card chk">
+        <div class="cardhead">
+          <span id="chkicon"></span>
+          <div class="grow">
+            <div class="cardtitle">Monthly checklist</div>
+            <div class="cardsub" id="chksub"></div>
+          </div>
+          <button class="iconbtn" id="chkgear" title="Checklist settings"></button>
+        </div>
+        <div class="chksettings" id="chksettings" style="display:none">
+          Unticks on day
+          <select id="resetday"></select>
+          each month
+          <button id="clearnow">Untick all now</button>
+        </div>
+        <div id="chkitems"></div>
+        <div class="chkadd">
+          <input id="newitem" placeholder="New item…">
+          <button class="iconbtn" id="addbtn" title="Add item"></button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="guide">
+    <div class="guidehead">
+      <h2>How this works</h2>
+      <button class="gtoggle" id="gtoggle" onclick="toggleGuide()">Expand all</button>
+    </div>
+
+    <details>
+      <summary>What this app is</summary>
+      <div class="gbody">
+        <p>The AMS Finance Hub is the <b>home screen for the monthly finance reporting</b>. It does not
+        hold any money data of its own — it <b>looks at the real files</b> (the budget workbook, the
+        Obsidian reports, the ledger, the dashboard data) and shows you, at a glance, where everything
+        stands and where everything lives.</p>
+        <p>It runs entirely on this Mac. A tiny engine (a local server on port 7780) reads the files and
+        serves this page. <b>Nothing is sent anywhere</b> — closing the browser tab loses nothing, and
+        reopening it shows the current truth again.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>The monthly status board</summary>
+      <div class="gbody">
+        <p>One row per month since March 2026, when the reporting system started. The four columns are
+        four independent checks against the real files:</p>
+        <ul>
+          <li><b>Report</b> — the file <i>YYYY-MM-financial-report.md</i> exists in the Obsidian Reports folder.</li>
+          <li><b>Ledger</b> — the month has its row in <i>monthly-ledger.csv</i>.</li>
+          <li><b>Workbook</b> — the month's actuals column (J–U) in the budget Excel actually contains numbers.
+              The hub opens the workbook file and looks at the 16 category rows itself.</li>
+          <li><b>Dashboard</b> — the month is included in the AMS Monthly Spend dashboard's data.</li>
+        </ul>
+        <p>The Status pill sums it up: <b>Complete</b> (teal) = all four green. <b>k of 4</b> (amber) =
+        partially done. <b>Not run yet</b> (grey outline) = the current month, which is normal until the
+        month ends. <b>Due — run this month</b> (solid amber) = a finished month whose report hasn't been
+        run — that's your cue to act.</p>
+        <p>Clicking any month that has a report opens that report in Obsidian.</p>
+        <div class="gex"><div class="gextitle">Example</div>
+        March 2026 shows a red cross under Workbook and "3 of 4": its report and ledger row exist, but its
+        actuals were never typed into the workbook. The board will keep saying so until they are — the hub
+        never assumes, it only reports what the files show.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>The KPI cards</summary>
+      <div class="gbody">
+        <p>The four cards under the masthead show the <b>latest reported month's</b> headline numbers:
+        income, expenses, net, and savings rate. They come from the same data file that feeds the AMS
+        Monthly Spend dashboard, so they always match it.</p>
+        <ul>
+          <li><b>Net</b> = income − expenses. Green when positive, red when negative.</li>
+          <li><b>Savings rate</b> = net ÷ income, as a percentage.</li>
+        </ul>
+        <div class="gex"><div class="gextitle">Example</div>
+        "July 2026 · Net +29 665" means July's report counted 92 398 SEK of income (LÖN rows only) and
+        62 733 SEK of expenses, so 32 % of income was kept. When the August report is run, all four cards
+        switch to August automatically.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Dashboards and the "months behind" badge</summary>
+      <div class="gbody">
+        <p>The two dashboard tiles open the published web dashboards. Each tile also admits when its
+        dashboard is <b>stale</b>:</p>
+        <ul>
+          <li><b>AMS Monthly Spend</b> is compared against the newest report. If a report exists that the
+              dashboard doesn't include yet, an amber badge counts the gap.</li>
+          <li><b>AMS Main Finance Dashboard</b> is compared against the workbook. If the workbook holds
+              newer actuals than the dashboard shows, the badge counts those months.</li>
+        </ul>
+        <div class="gex"><div class="gextitle">Example</div>
+        "Refreshed 2026-08-27 · through May 2026 <b>2 months behind</b>" means the workbook already has
+        June and July actuals, but the dashboard was last built from May. Refreshing the dashboard (ask
+        Sam) clears the badge on the next reload.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>The monthly checklist</summary>
+      <div class="gbody">
+        <p>The panel on the right is your working checklist for the month. Items are <b>numbered</b> in
+        order, because the routine is a sequence. Everything is saved instantly to a small file next to
+        the app, so it survives restarts and works in any browser.</p>
+        <ul>
+          <li><b>Tick / untick</b> — click the box. Ticked items fade to grey (no strikethrough).</li>
+          <li><b>Add</b> — type in the field at the bottom and press Enter (or click +).</li>
+          <li><b>Edit</b> — double-click the text, or hover the row and click the pencil.</li>
+          <li><b>Delete</b> — hover the row, click the bin.</li>
+          <li><b>Reorder</b> — hover the row, use the ▲ ▼ arrows. Numbers follow automatically.</li>
+        </ul>
+        <p><b>The reset:</b> the checklist unticks itself when a new period starts — by default on the
+        1st of each month. Click the settings symbol (two lines with dots) to choose another day (1–28)
+        or to untick everything right now. Items are never deleted by a reset, only the ticks.</p>
+        <p><b>Self-ticking items ⚡:</b> an item with a small lightning mark is linked to the status
+        board. During a period you process the <i>previous</i> month, so when the hub sees that month's
+        check go green, the item ticks itself. It happens at most once per month — if you untick it by
+        hand afterwards, it stays unticked. Hover the lightning for a reminder of this.</p>
+        <div class="gex"><div class="gextitle">Example</div>
+        You run the July report with Sam. Next time the hub loads, it sees July's Report check is green
+        and ticks "Run the monthly report with Sam" for you. "Refresh AMS Main Finance Dashboard" stays
+        open, because the hub can see that dashboard is still behind the workbook — the checklist and the
+        status board are one connected machine.</div>
+      </div>
+    </details>
+
+    <details>
+      <summary>Shortcut tiles and their colours</summary>
+      <div class="gbody">
+        <p>Every tile is a one-click opener, grouped in colour families:</p>
+        <ul>
+          <li><b style="color:#177368">Dashboards (teal)</b> — the two published web dashboards.</li>
+          <li><b style="color:#9c6d0e">Budget files (gold)</b> — the budget workbook 2026–2038, the weekly
+              follow-up Excel, and the monthly ledger. Opens in your normal spreadsheet app.</li>
+          <li><b style="color:#6d4fc4">Obsidian notes (violet)</b> — the latest report, the manual expenses
+              log, the wealth log, the canonical state note, and the report runbook. Opens in Obsidian.</li>
+          <li><b style="color:#2e6bb8">Folders (blue)</b> — Budgeting, Reports 2026, and Bank imports.
+              Opens in Finder.</li>
+        </ul>
+        <p>The icons are drawn by hand as sketchy ink lines — no stock symbols.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>The engine under the hood</summary>
+      <div class="gbody">
+        <p>A small local server (the "engine") on <b>port 7780</b> does the reading: it checks the report
+        files, parses the ledger, opens the Excel workbook, and reads the dashboard data. This page is
+        just its face.</p>
+        <ul>
+          <li><b>At login</b> the engine starts by itself, silently — the hub is always ready.</li>
+          <li><b>AMS Finance.app</b> (double-click, or from the Dock) opens the hub page, starting the
+              engine first if needed.</li>
+          <li>The engine writes its diary to <i>~/Library/Logs/AMS-Finance.log</i>.</li>
+        </ul>
+        <p><b>If the page won't load:</b> double-click AMS Finance.app — that heals it. If a macOS
+        question about the Documents folder ever appears (for example after a system update), click
+        <b>Allow</b>; the hub needs it to read the budget workbook.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>A month in the life (worked example)</summary>
+      <div class="gbody">
+        <p>Here is how a full cycle looks, using September 2026 as the stage:</p>
+        <ol>
+          <li><b>Sept 1, morning.</b> The checklist unticks itself (new period). August's row on the board
+              turns amber: <b>Due — run this month</b>. The KPI cards still show July — they always show
+              the newest finished report.</li>
+          <li><b>Export.</b> You download August's transactions from Swedbank and tick item 1 by hand.
+              A cash expense you dictated during August is already in the expenses log — tick item 2.</li>
+          <li><b>Run the report.</b> You ask Sam to run the August report. When it's done, the report file
+              and the ledger row exist. Next time the hub loads, August's Report and Ledger turn green and
+              "Run the monthly report with Sam" ⚡ ticks itself.</li>
+          <li><b>Resolve.</b> Flagged merchants and ticket purchases were decided during the run — tick
+              item 4 yourself (that judgment is yours, not a file the hub can check).</li>
+          <li><b>Workbook.</b> Sam writes the actuals into column R. The board's Workbook check goes green;
+              the checklist item ⚡ ticks itself; the Main Finance Dashboard tile now says
+              <i>1 month behind</i> — it hasn't caught up with the new column yet.</li>
+          <li><b>Dashboards.</b> Sam refreshes both dashboards. The badges disappear, August's Dashboard
+              check turns green, the row flips to teal <b>Complete</b>, both ⚡ items tick, and the KPI
+              cards switch to August's numbers.</li>
+          <li><b>Done.</b> 7 of 7 ticked, every row green. Until October 1st, when the wheel turns again.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="gviolet">
+      <summary>Abbreviations and definitions</summary>
+      <div class="gbody">
+        <dl>
+          <dt>AMS</dt><dd>Anna & Martin Schabbauer — the household. The prefix all your apps share.</dd>
+          <dt>Actuals</dt><dd>What was really spent in a month, per category — as opposed to budget, which is the plan. Written into the workbook's monthly columns.</dd>
+          <dt>Budget workbook</dt><dd>"Martin & Anna Budget 2026-2038.xlsx" — the master Excel file. Column H holds the monthly budget; columns J–U hold each month's actuals.</dd>
+          <dt>Dashboard</dt><dd>A published web page with charts. AMS Monthly Spend shows a month's spending in detail; AMS Main Finance Dashboard shows budget, net worth and the 2026–2038 runway.</dd>
+          <dt>Due</dt><dd>A month that has ended but whose report hasn't been run yet.</dd>
+          <dt>Engine</dt><dd>The small local server (port 7780) that reads your files and serves this page.</dd>
+          <dt>KPI</dt><dd>Key Performance Indicator — a headline number worth watching. Here: income, expenses, net, savings rate.</dd>
+          <dt>Ledger</dt><dd>monthly-ledger.csv — one row per month and category with actual vs budget. The long-term memory of the reporting system.</dd>
+          <dt>LÖN</dt><dd>Swedish for salary. Income in the reports counts LÖN rows only.</dd>
+          <dt>Net</dt><dd>Income minus expenses for a month. Positive = money kept.</dd>
+          <dt>Period</dt><dd>The checklist's month, running from reset day to reset day. During a period you process the previous calendar month.</dd>
+          <dt>Report</dt><dd>The monthly financial report — a 16-section Markdown document in Obsidian, produced by the monthly-financial-report skill.</dd>
+          <dt>Reset day</dt><dd>The day of the month (1–28) when the checklist unticks itself. Default: the 1st.</dd>
+          <dt>Sam</dt><dd>Your robot assistant in Obsidian, who runs the monthly report, writes the workbook, and refreshes the dashboards.</dd>
+          <dt>Savings rate</dt><dd>Net ÷ income, in percent. How much of what came in stayed.</dd>
+          <dt>SEK</dt><dd>Swedish krona — all amounts in this hub.</dd>
+          <dt>Staleness badge</dt><dd>The amber "X months behind" mark on a dashboard tile whose dashboard lags the newest data.</dd>
+          <dt>⚡ Self-ticking item</dt><dd>A checklist item linked to a status check; it ticks itself when the hub sees the work is done.</dd>
+        </dl>
+      </div>
+    </details>
+
+    <details class="gteal">
+      <summary>Version log</summary>
+      <div class="gbody">
+        <table class="gver">
+          <tr><td>v1.7</td><td>Code published on GitHub (marsch124/AMS-Finance). Personal settings — file paths and dashboard links — moved to config.json, which stays on this Mac and is never published.</td></tr>
+          <tr><td>v1.6</td><td>KPI cards for the latest reported month · "months behind" staleness badges on the dashboard tiles · amber "Due — run this month" nudge · self-ticking checklist items (⚡) · engine starts automatically at login · this guide.</td></tr>
+          <tr><td>v1.5</td><td>Column-heading explanations became real tooltips (instant, styled) — the native ones never showed in Safari.</td></tr>
+          <tr><td>v1.4</td><td>Colour families per section (teal / gold / violet / blue) · numbered checklist items.</td></tr>
+          <tr><td>v1.3</td><td>Spreadsheet-style status board with column headings and tick/cross cells · masthead in its own panel.</td></tr>
+          <tr><td>v1.2</td><td>Lilac background with the faint hand-drawn coin pattern · settings symbol changed from gear to sliders.</td></tr>
+          <tr><td>v1.1</td><td>Monthly checklist panel with automatic reset day · compact redesign in the Monthly Spend dashboard's visual language · hand-drawn icons replaced all stock symbols.</td></tr>
+          <tr><td>v1.0</td><td>First version: status board, shortcut tiles, AMS Finance.app launcher.</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <footer>AMS Finance Hub v1.7 · runs locally on this Mac (port 7780) · nothing leaves the machine</footer>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ---------- hand-drawn icon set (inline SVG, sketchy strokes) ---------- */
+const ICONS = {
+  bars: '<path d="M5.2 26.3q10.8 1.1 21.6.2"/><path d="M8.8 26l.3-7.6 4.1-.3.2 7.8"/><path d="M15.6 25.9l-.2-12.9 4.3-.4.3 13.2"/><path d="M22.6 26l.1-5.3 4-.3.2 5.5"/>',
+  trend: '<path d="M6.3 5.4l-.5 20.4q10.5 1.2 20.7.4"/><path d="M8.6 21.8q3.2-4.4 6.4-3.6 3-.4 5.6-5.2 2.2-4 5.6-6.8"/><path d="M22.4 5.8l4.1-.4.2 4.2"/>',
+  moneybag: '<path d="M13.2 8.2l-1.6-3.4 8.9-.2-1.7 3.5"/><path d="M13.1 8.1q-6.2 4.2-6.4 11.2-.1 6.1 9.4 6.1 9.3 0 9-6.3-.3-6.8-6.3-10.9z"/><path d="M18.9 13.9q-3.1-1.3-4.6.7t2 3q3.5.8 2.4 3.1-1.4 1.9-4.5.5"/><path d="M16.6 12.2l-.2 11.4"/>',
+  calendar: '<path d="M6.3 8.4l19.6-.3.4 17.2-20.4.3z"/><path d="M11 5.2l.1 5.1M21.2 5l.1 5.2"/><path d="M6.5 12.8l19.4-.2"/><path d="M11.8 19.6l2.9 3 5.8-6.4"/>',
+  notebook: '<path d="M8.4 5.6l15.4-.4.5 21.2-15.7.4z"/><path d="M11.4 5.4l.3 21.3"/><path d="M14.6 11l6.4-.2M14.7 15.1l6.3-.2M14.8 19.1l6.2-.2"/>',
+  document: '<path d="M8.6 5.3l10.3-.2 5 5.1.3 16.6-15.3.3z"/><path d="M18.7 5.2l.2 5.4 5.2-.1"/><path d="M12 15.2l8.2-.3M12.1 19.2l8-.2M12.2 22.9l5.4-.2"/>',
+  pencil: '<path d="M7.2 25.3l1.2-4.6L20.3 8.3q1.6-1.8 3.3-.2 1.7 1.5.1 3.3L11.6 23.9z"/><path d="M8.3 20.8l3.2 3.2"/><path d="M18.9 9.8l3.3 3.1"/>',
+  bank: '<path d="M5.8 12.4L16 5.8l10.3 6.4z"/><path d="M9 14.6l.1 7.6M16.1 14.7l.1 7.5M23.2 14.6l.1 7.6"/><path d="M6.4 24.6l19.4-.3"/><path d="M4.6 27.3l22.9-.3"/>',
+  compass: '<path d="M16.2 4.8q9.1.3 9.4 11.2-.4 10.9-9.6 11.2-9-.4-9.3-11.3Q7.2 5 16.2 4.8z"/><path d="M20.3 11.5l-2.7 7.6-5.7 2 2.4-7.4z"/>',
+  book: '<path d="M9 5.6q0-1.8 2-1.8l12.4-.2.5 22.3-12.6.2q-2.3 0-2.4-2z"/><path d="M8.9 23.9q0 2.1 2.4 2.1"/><path d="M17.7 3.9l.2 6.8-2.3-1.8-2.2 2-.2-6.9"/>',
+  folder: '<path d="M4.8 9.3q0-2 2-2l5.9-.2 2.6 3 10.4-.2q2 0 1.9 2l-.6 11.8q-.1 2-2.1 2l-18-.2q-2 0-1.9-2z"/>',
+  clipboard: '<path d="M12.6 6.8l-5.4.2-.3 19.6 17.8-.2-.2-19.5-5.3-.1"/><path d="M12.7 4.8l6.5-.1.1 4-6.6.1z"/><path d="M11.6 16.6l3.1 3.3 6-6.6"/>',
+  sliders: '<path d="M6.4 11.8l19.3-.3"/><path d="M6.5 20.9l19.2-.2"/><path d="M12.6 9.2q2.7.1 2.8 2.5-.1 2.4-2.9 2.5-2.6-.1-2.7-2.5.1-2.4 2.8-2.5z" fill="currentColor"/><path d="M20.3 18.3q2.7.1 2.8 2.5-.1 2.4-2.9 2.5-2.6-.1-2.7-2.5.1-2.4 2.8-2.5z" fill="currentColor"/>',
+  plus: '<path d="M16 7.6l.2 16.8"/><path d="M7.6 16.2l16.8-.3"/>',
+  up: '<path d="M8.4 20.6l7.5-9.3 7.4 9"/>',
+  down: '<path d="M8.4 11.6l7.4 9.2 7.5-8.9"/>',
+  trash: '<path d="M7.9 9.4l16.3-.3"/><path d="M12.8 9.2l.2-3 5.9-.1.1 2.9"/><path d="M9.8 9.5l1 16.7 10.6-.2.8-16.7"/><path d="M13.9 13.2l.3 9.2M18.3 13.1l.1 9.2"/>',
+  box: '<path d="M7.4 7.8l17.3-.4.3 17.2-17.4.3z"/>',
+  tick: '<path d="M7 17.4l6 6.1L25.4 9.6"/>',
+  bolt: '<path d="M18.2 4.4L9.6 17.2l5.6.5-2.9 10 8.9-13.1-5.7-.4z"/>',
+  cross: '<path d="M9.4 9.6l13.4 13M22.6 9.8L9.6 22.8"/>',
+  dash: '<path d="M9 16.1l14-.2"/>',
+  boxcheck: '<path d="M7.4 7.8l17.3-.4.3 17.2-17.4.3z"/><path d="M11 15.9l3.9 4.2 7.4-8.7"/>',
+};
+function ic(name, w) {
+  return `<svg class="hicon" viewBox="0 0 32 32" fill="none" stroke="currentColor" ` +
+         `stroke-width="${w || 1.9}" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+}
+
+/* ---------- shared helpers ---------- */
+const MONTH_NAMES = ["January","February","March","April","May","June",
+                     "July","August","September","October","November","December"];
+function monthLabel(m) { const [y, mm] = m.split("-"); return MONTH_NAMES[+mm - 1] + " " + y; }
+function fmtDate(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("sv-SE");
+}
+function esc(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 1500);
+}
+async function openTarget(id, label) {
+  toast("Opening " + label + "…");
+  try {
+    const r = await fetch("/api/open?id=" + encodeURIComponent(id));
+    if (!r.ok) toast("Could not open " + label);
+  } catch (e) { toast("Could not open " + label); }
+}
+
+/* ---------- status board ---------- */
+function chip(on, idle) {
+  const cls = idle ? "idle" : (on ? "on" : "off");
+  return `<span class="chip ${cls}">${ic(idle ? "dash" : on ? "tick" : "cross", 3.4)}</span>`;
+}
+function tile(id, icon, name, meta, big) {
+  return `<div class="tile${big ? " big" : ""}" onclick="openTarget('${id}', '${name.replace(/'/g, "\\'")}')">
+    ${ic(icon)}<div><div class="name">${name}</div><div class="meta">${meta}</div></div></div>`;
+}
+function fmtSEK(n) {
+  return (n < 0 ? "−" : "") + Math.abs(Math.round(n)).toLocaleString("sv-SE");
+}
+function renderKpis(s) {
+  const box = document.getElementById("kpis");
+  if (!s.kpi) { box.style.display = "none"; return; }
+  const k = s.kpi;
+  const savings = k.income ? Math.round(100 * k.net / k.income) : null;
+  box.style.display = "grid";
+  box.innerHTML = `
+    <div class="kpi"><div class="klabel">${monthLabel(k.month)} · Income</div>
+      <div class="kvalue">${fmtSEK(k.income)}</div><div class="ksub">SEK</div></div>
+    <div class="kpi"><div class="klabel">${monthLabel(k.month)} · Expenses</div>
+      <div class="kvalue">${fmtSEK(k.expenses)}</div><div class="ksub">SEK</div></div>
+    <div class="kpi"><div class="klabel">${monthLabel(k.month)} · Net</div>
+      <div class="kvalue ${k.net >= 0 ? "pos" : "neg"}">${k.net >= 0 ? "+" : ""}${fmtSEK(k.net)}</div>
+      <div class="ksub">SEK</div></div>
+    <div class="kpi"><div class="klabel">${monthLabel(k.month)} · Savings rate</div>
+      <div class="kvalue ${savings >= 0 ? "pos" : "neg"}">${savings === null ? "—" : savings + " %"}</div>
+      <div class="ksub">of income saved</div></div>`;
+}
+
+function renderMonths(s) {
+  const header = `<div class="mhead">
+    <div class="mname">Month</div>
+    <div class="checks">
+      <span class="colhead" data-tip="The monthly report exists in Obsidian">Report</span>
+      <span class="colhead" data-tip="The month has its row in monthly-ledger.csv">Ledger</span>
+      <span class="colhead" data-tip="Actuals are written into the budget Excel workbook">Workbook</span>
+      <span class="colhead" data-tip="The month is included in the AMS Monthly Spend dashboard">Dashboard</span>
+    </div>
+    <div class="stathead" data-tip="Click a month to open its report in Obsidian">Status</div>
+  </div>`;
+  document.getElementById("months").innerHTML = header + s.months.slice().reverse().map(m => {
+    const done = [m.report, m.ledger, m.workbook, m.dashboard].filter(Boolean).length;
+    const isDue = !m.isCurrent && !m.report;   // a finished month whose report hasn't been run
+    let overall, subtext;
+    if (done === 4) overall = `<span class="overall done">Complete</span>`;
+    else if (m.isCurrent && done === 0) overall = `<span class="overall due">Not run yet</span>`;
+    else if (isDue) overall = `<span class="overall duenow">Due — run this month</span>`;
+    else overall = `<span class="overall part">${done} of 4</span>`;
+    if (m.report) subtext = "report " + fmtDate(m.reportMtime);
+    else if (isDue) subtext = "time to export & run";
+    else subtext = "no report yet";
+    const idle = m.isCurrent && done === 0;
+    return `<div class="mrow${m.report ? " clickable" : ""}"
+      ${m.report ? `onclick="openTarget('report-${m.month}', '${monthLabel(m.month)} report')"` : ""}>
+      <div class="mname">${monthLabel(m.month)}
+        <small>${subtext}</small></div>
+      <div class="checks">
+        ${chip(m.report, idle)}${chip(m.ledger, idle)}
+        ${chip(m.workbook, idle)}${chip(m.dashboard, idle)}
+      </div>
+      ${overall}
+    </div>`;
+  }).join("");
+}
+function staleBadge(n) {
+  if (!n) return "";
+  return `<span class="stale">${n} month${n > 1 ? "s" : ""} behind</span>`;
+}
+function renderTiles(s) {
+  const latest = s.months.slice().reverse().find(m => m.report);
+  document.getElementById("dashboards").innerHTML =
+    tile("dash-spend", "bars", "AMS Monthly Spend",
+         "Data " + fmtDate(s.dashSpend.generated) + " · months " +
+         (s.dashSpend.months.length ? s.dashSpend.months[0].slice(5) + "–" + s.dashSpend.months[s.dashSpend.months.length - 1].slice(5) : "—") +
+         staleBadge(s.dashSpend.behind), true) +
+    tile("dash-budget", "trend", "AMS Main Finance Dashboard",
+         "Refreshed " + (s.dashBudget.refreshed || "—") +
+         (s.dashBudget.through ? " · through " + s.dashBudget.through : "") +
+         staleBadge(s.dashBudget.behind), true);
+
+  document.getElementById("files").innerHTML =
+    tile("workbook", "moneybag", "Budget workbook", "Saved " + fmtDate(s.workbookMtime)) +
+    tile("weekly", "calendar", "Weekly follow-up", "Excel file") +
+    tile("ledger", "notebook", "Monthly ledger", "Updated " + fmtDate(s.ledgerMtime));
+
+  document.getElementById("notes").innerHTML =
+    (latest ? tile("report-" + latest.month, "document", "Latest report", monthLabel(latest.month)) : "") +
+    tile("expenses-log", "pencil", "Expenses log", "Manual cash spend") +
+    tile("wealth-log", "bank", "Wealth log", "Account balances") +
+    tile("canonical", "compass", "Canonical state", "The system, today") +
+    tile("runbook", "book", "Report runbook", "Monthly report skill");
+
+  document.getElementById("folders").innerHTML =
+    tile("budgeting-folder", "folder", "Budgeting", "Workbook &amp; backups") +
+    tile("reports-folder", "folder", "Reports 2026", "Monthly reports") +
+    tile("imports-folder", "folder", "Bank imports", "Transaction exports");
+}
+
+async function load() {
+  const now = new Date();
+  document.getElementById("curmonth").textContent =
+    MONTH_NAMES[now.getMonth()] + " " + now.getFullYear();
+  document.getElementById("today").textContent =
+    now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const err = document.getElementById("err");
+  err.style.display = "none";
+  let s = null;
+  try {
+    s = await (await fetch("/api/status")).json();
+    renderKpis(s);
+    renderMonths(s);
+    renderTiles(s);
+    if (s.workbookError) {
+      err.textContent = "Workbook status could not be read: " + s.workbookError;
+      err.style.display = "block";
+    }
+  } catch (e) {
+    err.textContent = "Could not load status — is the Finance Hub server running? (" + e + ")";
+    err.style.display = "block";
+  }
+  loadChecklist(s);
+}
+
+/* ---------- checklist ---------- */
+let chk = null;       // {resetDay, periodStart, items:[{id,text,done}]}
+let editingId = null;
+
+function monthBefore(ym) {
+  let [y, m] = ym.split("-").map(Number);
+  m--; if (m < 1) { m = 12; y--; }
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
+async function loadChecklist(status) {
+  try {
+    chk = await (await fetch("/api/checklist")).json();
+    // Auto-tick linked items: during a period we process the PREVIOUS month,
+    // so an item ticks itself once the hub sees that month's check go green.
+    if (status && chk.periodStart) {
+      const target = monthBefore(chk.periodStart.slice(0, 7));
+      const st = status.months.find(m => m.month === target);
+      const checks = {
+        report: !!(st && st.report), ledger: !!(st && st.ledger),
+        workbook: !!(st && st.workbook), dashboard: !!(st && st.dashboard),
+        dashbudget: !!(status.dashBudget.throughMonth && status.dashBudget.throughMonth >= target),
+      };
+      let changed = false;
+      chk.items.forEach(it => {
+        if (it.link && checks[it.link] && !it.done && it.autoApplied !== target) {
+          it.done = true;
+          it.autoApplied = target;   // once per month — unticking by hand sticks
+          changed = true;
+        }
+      });
+      if (changed) { saveChecklist(); return; }
+    }
+    renderChecklist();
+  } catch (e) { /* status error banner already covers a dead server */ }
+}
+async function saveChecklist() {
+  try {
+    const r = await fetch("/api/checklist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(chk),
+    });
+    if (r.ok) chk = await r.json();
+  } catch (e) { toast("Could not save checklist"); }
+  renderChecklist();
+}
+
+function ordinal(n) {
+  const s = ["th", "st", "nd", "rd"], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+function renderChecklist() {
+  if (!chk) return;
+  const doneCount = chk.items.filter(i => i.done).length;
+  document.getElementById("chksub").textContent =
+    doneCount + " of " + chk.items.length + " done · unticks on the " + ordinal(chk.resetDay);
+
+  const sel = document.getElementById("resetday");
+  sel.innerHTML = Array.from({ length: 28 }, (_, i) =>
+    `<option value="${i + 1}"${i + 1 === chk.resetDay ? " selected" : ""}>${i + 1}</option>`).join("");
+
+  const box = document.getElementById("chkitems");
+  if (!chk.items.length) {
+    box.innerHTML = `<div class="chkempty">No items yet — add your first below.</div>`;
+  } else {
+    box.innerHTML = chk.items.map((it, i) => {
+      if (it.id === editingId) {
+        return `<div class="citem${it.done ? " done" : ""}">
+          <span class="cnum">${i + 1}</span>
+          <button class="cbox">${ic(it.done ? "boxcheck" : "box", 2.2)}</button>
+          <input class="editfield" id="editfield" value="${esc(it.text)}">
+        </div>`;
+      }
+      return `<div class="citem${it.done ? " done" : ""}" data-id="${it.id}">
+        <span class="cnum">${i + 1}</span>
+        <button class="cbox" onclick="toggleItem('${it.id}')" title="Tick / untick">${ic(it.done ? "boxcheck" : "box", 2.2)}</button>
+        <span class="ctext" ondblclick="startEdit('${it.id}')">${esc(it.text)}${it.link ? `<span class="cauto" data-tip="Ticks itself when the hub sees this done">${ic("bolt", 2.4)}</span>` : ""}</span>
+        <span class="cbtns">
+          <button class="iconbtn" onclick="moveItem('${it.id}',-1)" title="Move up" ${i === 0 ? "disabled" : ""}>${ic("up", 2.6)}</button>
+          <button class="iconbtn" onclick="moveItem('${it.id}',1)" title="Move down" ${i === chk.items.length - 1 ? "disabled" : ""}>${ic("down", 2.6)}</button>
+          <button class="iconbtn" onclick="startEdit('${it.id}')" title="Edit">${ic("pencil", 2.4)}</button>
+          <button class="iconbtn" onclick="deleteItem('${it.id}')" title="Delete">${ic("trash", 2.4)}</button>
+        </span>
+      </div>`;
+    }).join("");
+  }
+
+  if (editingId !== null) {
+    const f = document.getElementById("editfield");
+    if (f) {
+      f.focus(); f.select();
+      f.addEventListener("keydown", e => {
+        if (e.key === "Enter") finishEdit(true);
+        if (e.key === "Escape") finishEdit(false);
+      });
+      f.addEventListener("blur", () => finishEdit(true));
+    }
+  }
+}
+
+function findItem(id) { return chk.items.find(i => i.id === id); }
+function toggleItem(id) {
+  const it = findItem(id); if (!it) return;
+  it.done = !it.done;
+  renderChecklist(); saveChecklist();
+}
+function moveItem(id, dir) {
+  const i = chk.items.findIndex(x => x.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= chk.items.length) return;
+  [chk.items[i], chk.items[j]] = [chk.items[j], chk.items[i]];
+  renderChecklist(); saveChecklist();
+}
+function deleteItem(id) {
+  chk.items = chk.items.filter(x => x.id !== id);
+  renderChecklist(); saveChecklist();
+}
+function startEdit(id) { editingId = id; renderChecklist(); }
+function finishEdit(keep) {
+  const f = document.getElementById("editfield");
+  const it = findItem(editingId);
+  if (editingId === null) return;
+  editingId = null;
+  if (keep && f && it) {
+    const v = f.value.trim();
+    if (v) it.text = v; else chk.items = chk.items.filter(x => x.id !== it.id);
+  }
+  renderChecklist(); saveChecklist();
+}
+function addItem() {
+  const f = document.getElementById("newitem");
+  const v = f.value.trim();
+  if (!v) return;
+  chk.items.push({ id: "i" + Date.now(), text: v, done: false });
+  f.value = "";
+  renderChecklist(); saveChecklist();
+  f.focus();
+}
+
+function toggleGuide() {
+  const all = [...document.querySelectorAll(".guide details")];
+  const expand = all.some(d => !d.open);
+  all.forEach(d => { d.open = expand; });
+  document.getElementById("gtoggle").textContent = expand ? "Collapse all" : "Expand all";
+}
+document.querySelectorAll(".guide details").forEach(d =>
+  d.addEventListener("toggle", () => {
+    const all = [...document.querySelectorAll(".guide details")];
+    document.getElementById("gtoggle").textContent =
+      all.every(x => x.open) ? "Collapse all" : "Expand all";
+  }));
+
+document.getElementById("chkicon").innerHTML = ic("clipboard", 2);
+document.getElementById("chkgear").innerHTML = ic("sliders", 2.2);
+document.getElementById("addbtn").innerHTML = ic("plus", 2.4);
+document.getElementById("chkgear").addEventListener("click", () => {
+  const p = document.getElementById("chksettings");
+  p.style.display = p.style.display === "none" ? "flex" : "none";
+});
+document.getElementById("resetday").addEventListener("change", e => {
+  chk.resetDay = parseInt(e.target.value, 10);
+  saveChecklist();
+});
+document.getElementById("clearnow").addEventListener("click", () => {
+  chk.items.forEach(i => { i.done = false; });
+  renderChecklist(); saveChecklist();
+});
+document.getElementById("addbtn").addEventListener("click", addItem);
+document.getElementById("newitem").addEventListener("keydown", e => {
+  if (e.key === "Enter") addItem();
+});
+
+load();
+</script>
+</body>
+</html>
