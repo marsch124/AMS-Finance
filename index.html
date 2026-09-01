@@ -170,6 +170,26 @@
   .hicon { width: 26px; height: 26px; flex-shrink: 0; color: var(--ink);
            transition: color .12s; margin-top: 1px; }
 
+  /* storage badges — where the data lives */
+  .tile { position: relative; }
+  .sbadge { position: absolute; top: 6px; right: 7px; padding: 2px; line-height: 0;
+            color: var(--idle); cursor: pointer; border-radius: 6px; z-index: 2; }
+  .sbadge:hover { color: var(--accent); background: rgba(255,255,255,.65); }
+  .sbadge .hicon { width: 14px; height: 14px; margin: 0; }
+  .cardhead { position: relative; }
+  .cardhead .sbadge { top: 10px; right: 12px; }
+  .chk .cardhead .sbadge { position: static; margin-left: 2px; }
+  #smenu { position: fixed; z-index: 60; background: var(--card); border: 1px solid var(--line);
+           border-radius: 12px; box-shadow: 0 8px 30px rgba(29,42,68,.18); padding: 6px;
+           display: none; min-width: 190px; }
+  #smenu .mtitle { font-size: 10px; text-transform: uppercase; letter-spacing: .09em;
+                   color: var(--muted); font-weight: 600; padding: 5px 10px 3px; }
+  #smenu .mopt { display: flex; align-items: center; gap: 9px; padding: 5px 10px;
+                 border-radius: 8px; cursor: pointer; font-size: 12.5px; }
+  #smenu .mopt:hover { background: var(--accent-soft); }
+  #smenu .mopt.sel { background: var(--accent); color: #fff; }
+  #smenu .mopt .hicon { width: 15px; height: 15px; margin: 0; }
+
   /* checklist panel */
   .chk .cardhead { display: flex; align-items: flex-start; gap: 9px; padding-bottom: 10px; }
   .chk .cardhead .hicon { color: var(--accent); width: 24px; height: 24px; }
@@ -282,6 +302,7 @@
       <div class="card">
         <div class="cardhead">
           <div class="cardtitle">Monthly reporting status</div>
+          <span id="statusBadge"></span>
         </div>
         <div id="months"></div>
       </div>
@@ -308,12 +329,17 @@
             <div class="cardsub" id="chksub"></div>
           </div>
           <button class="iconbtn" id="chkgear" title="Checklist settings"></button>
+          <span id="chkBadge"></span>
         </div>
         <div class="chksettings" id="chksettings" style="display:none">
           Unticks on day
           <select id="resetday"></select>
           each month
           <button id="clearnow">Untick all now</button>
+          <span style="flex-basis:100%; height:0"></span>
+          Reports become due on day
+          <select id="dueday"></select>
+          <span data-tip="Bank statements need about a week to settle before the export is complete" style="cursor:help">ⓘ</span>
         </div>
         <div id="chkitems"></div>
         <div class="chkadd">
@@ -357,8 +383,10 @@
         </ul>
         <p>The Status pill sums it up: <b>Complete</b> (teal) = all four green. <b>k of 4</b> (amber) =
         partially done. <b>Not run yet</b> (grey outline) = the current month, which is normal until the
-        month ends. <b>Due — run this month</b> (solid amber) = a finished month whose report hasn't been
-        run — that's your cue to act.</p>
+        month ends. When a month ends, its report first shows <b>Due [date]</b> (grey — "bank statements
+        settling"): the bank needs about a week before the export is complete, so nothing is expected of
+        you yet. From the due day — the 8th unless you change it — it turns solid amber:
+        <b>Due — run this month</b>. That's your cue to act.</p>
         <p>Clicking any month that has a report opens that report in Obsidian.</p>
         <div class="gex"><div class="gextitle">Example</div>
         March 2026 shows a red cross under Workbook and "3 of 4": its report and ledger row exist, but its
@@ -417,7 +445,9 @@
         </ul>
         <p><b>The reset:</b> the checklist unticks itself when a new period starts — by default on the
         1st of each month. Click the settings symbol (two lines with dots) to choose another day (1–28)
-        or to untick everything right now. Items are never deleted by a reset, only the ticks.</p>
+        or to untick everything right now. Items are never deleted by a reset, only the ticks.
+        The same settings panel also holds the board's <b>"reports become due on day …"</b> setting
+        (default the 8th — bank statements need time to settle before the export is complete).</p>
         <p><b>Self-ticking items ⚡:</b> an item with a small lightning mark is linked to the status
         board. During a period you process the <i>previous</i> month, so when the hub sees that month's
         check go green, the item ticks itself. It happens at most once per month — if you untick it by
@@ -448,6 +478,27 @@
     </details>
 
     <details>
+      <summary>Storage badges — where each thing lives</summary>
+      <div class="gbody">
+        <p>The small symbol in the top-right corner of every panel says <b>where that data is
+        actually stored</b>:</p>
+        <ul>
+          <li><b>Cloud</b> — iCloud &nbsp;·&nbsp; <b>Open box</b> — Dropbox &nbsp;·&nbsp;
+              <b>Triangle</b> — Google Drive &nbsp;·&nbsp; <b>Globe</b> — the web (claude.ai)</li>
+          <li><b>Laptop</b> — this MacBook Pro &nbsp;·&nbsp; <b>Screen</b> — AMS Home (the Mac at home)
+              &nbsp;·&nbsp; <b>Phone</b> — iPhone &nbsp;·&nbsp; <b>?</b> — other</li>
+        </ul>
+        <p><b>Click any badge to change it.</b> A small menu opens with the synced services on top and
+        the devices below — pick the right one and it's saved instantly (locally, in the app's own
+        folder, like the checklist). Hover a badge to read its current setting in words.</p>
+        <div class="gex"><div class="gextitle">Example</div>
+        The two dashboards start with the globe (they live on claude.ai), and everything else starts
+        as this MacBook Pro. If you move the budget workbook into Dropbox one day, click its badge
+        and choose the box — the hub doesn't move any files, it just records what you tell it.</div>
+      </div>
+    </details>
+
+    <details>
       <summary>The engine under the hood</summary>
       <div class="gbody">
         <p>A small local server (the "engine") on <b>port 7780</b> does the reading: it checks the report
@@ -470,9 +521,10 @@
       <div class="gbody">
         <p>Here is how a full cycle looks, using September 2026 as the stage:</p>
         <ol>
-          <li><b>Sept 1, morning.</b> The checklist unticks itself (new period). August's row on the board
-              turns amber: <b>Due — run this month</b>. The KPI cards still show July — they always show
-              the newest finished report.</li>
+          <li><b>Sept 1, morning.</b> The checklist unticks itself (new period). August's row shows a grey
+              <b>Due 8 Sep</b> — the month is over, but the bank statements are still settling, so the hub
+              isn't nagging yet. On the 8th it turns amber: <b>Due — run this month</b>. The KPI cards
+              still show July — they always show the newest finished report.</li>
           <li><b>Export.</b> You download August's transactions from Swedbank and tick item 1 by hand.
               A cash expense you dictated during August is already in the expenses log — tick item 2.</li>
           <li><b>Run the report.</b> You ask Sam to run the August report. When it's done, the report file
@@ -499,7 +551,7 @@
           <dt>Actuals</dt><dd>What was really spent in a month, per category — as opposed to budget, which is the plan. Written into the workbook's monthly columns.</dd>
           <dt>Budget workbook</dt><dd>"Martin & Anna Budget 2026-2038.xlsx" — the master Excel file. Column H holds the monthly budget; columns J–U hold each month's actuals.</dd>
           <dt>Dashboard</dt><dd>A published web page with charts. AMS Monthly Spend shows a month's spending in detail; AMS Main Finance Dashboard shows budget, net worth and the 2026–2038 runway.</dd>
-          <dt>Due</dt><dd>A month that has ended but whose report hasn't been run yet.</dd>
+          <dt>Due</dt><dd>A month that has ended but whose report hasn't been run yet. It counts as due from the due day of the following month (default the 8th); before that it shows "bank statements settling".</dd>
           <dt>Engine</dt><dd>The small local server (port 7780) that reads your files and serves this page.</dd>
           <dt>KPI</dt><dd>Key Performance Indicator — a headline number worth watching. Here: income, expenses, net, savings rate.</dd>
           <dt>Ledger</dt><dd>monthly-ledger.csv — one row per month and category with actual vs budget. The long-term memory of the reporting system.</dd>
@@ -512,6 +564,7 @@
           <dt>Savings rate</dt><dd>Net ÷ income, in percent. How much of what came in stayed.</dd>
           <dt>SEK</dt><dd>Swedish krona — all amounts in this hub.</dd>
           <dt>Staleness badge</dt><dd>The amber "X months behind" mark on a dashboard tile whose dashboard lags the newest data.</dd>
+          <dt>Storage badge</dt><dd>The small symbol in a panel's top-right corner showing where that data lives (iCloud, Dropbox, Google Drive, web, MacBook Pro, AMS Home, iPhone). Click it to change; it records, it never moves files.</dd>
           <dt>⚡ Self-ticking item</dt><dd>A checklist item linked to a status check; it ticks itself when the hub sees the work is done.</dd>
         </dl>
       </div>
@@ -521,6 +574,8 @@
       <summary>Version log</summary>
       <div class="gbody">
         <table class="gver">
+          <tr><td>v1.9</td><td>Reports now become due on a configurable day of the following month (default the 8th — bank statements need a week to settle); until then the board shows a calm grey "Due [date] · bank statements settling" instead of the amber nudge. The engine also announces its version, so AMS Main Hub's Finance card can show a live version chip.</td></tr>
+          <tr><td>v1.8</td><td>Storage badges: a hand-drawn symbol on every panel's top-right corner showing where that data lives (iCloud / Dropbox / Google Drive / web / MacBook Pro / AMS Home / iPhone / other) — click to change, choices saved locally.</td></tr>
           <tr><td>v1.7</td><td>Code published on GitHub (marsch124/AMS-Finance). Personal settings — file paths and dashboard links — moved to config.json, which stays on this Mac and is never published.</td></tr>
           <tr><td>v1.6</td><td>KPI cards for the latest reported month · "months behind" staleness badges on the dashboard tiles · amber "Due — run this month" nudge · self-ticking checklist items (⚡) · engine starts automatically at login · this guide.</td></tr>
           <tr><td>v1.5</td><td>Column-heading explanations became real tooltips (instant, styled) — the native ones never showed in Safari.</td></tr>
@@ -534,9 +589,10 @@
     </details>
   </div>
 
-  <footer>AMS Finance Hub v1.7 · runs locally on this Mac (port 7780) · nothing leaves the machine</footer>
+  <footer>AMS Finance Hub v1.9 · runs locally on this Mac (port 7780) · nothing leaves the machine</footer>
 </div>
 <div id="toast"></div>
+<div id="smenu"></div>
 
 <script>
 /* ---------- hand-drawn icon set (inline SVG, sketchy strokes) ---------- */
@@ -559,6 +615,14 @@ const ICONS = {
   down: '<path d="M8.4 11.6l7.4 9.2 7.5-8.9"/>',
   trash: '<path d="M7.9 9.4l16.3-.3"/><path d="M12.8 9.2l.2-3 5.9-.1.1 2.9"/><path d="M9.8 9.5l1 16.7 10.6-.2.8-16.7"/><path d="M13.9 13.2l.3 9.2M18.3 13.1l.1 9.2"/>',
   box: '<path d="M7.4 7.8l17.3-.4.3 17.2-17.4.3z"/>',
+  cloud: '<path d="M10.4 24.8q-5.5-.3-5.7-5.1.1-4.5 4.7-5 1.1-5.8 6.8-6 5.2-.2 7.2 4.3 5-.2 5.2 5.6-.2 5.9-6.2 6.3z"/>',
+  dropboxbox: '<path d="M5.6 12.9L16 6.2l10.5 6.6-10.4 6.6z"/><path d="M5.7 13l-.1 7.7L16 27l10.3-6.2.1-7.8"/><path d="M16 19.4l.1 7.3"/>',
+  gdrive: '<path d="M12.4 6l7.3.1 7.2 12.7-3.8 7-14.4.2-3.8-7.1z"/><path d="M12.5 6.2l6.7 12.5m-10.7.3l14.5.1"/>',
+  globe: '<path d="M16 5q9.3.3 9.6 11-.3 10.7-9.7 11-9.2-.3-9.5-11Q6.7 5.3 16 5z"/><path d="M6.7 16.2l18.7-.3"/><path d="M16 5.2q-4.6 5.3-4.4 11 .2 5.6 4.5 10.6 4.4-5.2 4.3-10.8-.1-5.6-4.4-10.8z"/>',
+  laptop: '<path d="M7.9 8.4l16.1-.3.3 12.1-16.6.3z"/><path d="M4.6 23.6l22.9-.2q-.4 2.5-2.9 2.5l-17.3.2q-2.4 0-2.7-2.5z"/>',
+  desktopmac: '<path d="M6 6.6l20-.3.3 13.9-20.6.3z"/><path d="M6.2 16.9l19.9-.3"/><path d="M13.3 20.6l5.4-.1.9 4.7-7.2.1z"/><path d="M10.4 25.4l11.2-.2"/>',
+  iphone: '<path d="M11 5.3l9.9-.2.4 21.6-10.2.2z"/><path d="M14.4 23.7l3.1-.1"/>',
+  question: '<path d="M11.8 11.7q.4-4.4 4.4-4.3 3.8.1 3.9 3.5-.1 2.6-2.7 3.9-1.5.8-1.5 2.8l0 1.4"/><path d="M15.9 24.4l.2.3"/>',
   tick: '<path d="M7 17.4l6 6.1L25.4 9.6"/>',
   bolt: '<path d="M18.2 4.4L9.6 17.2l5.6.5-2.9 10 8.9-13.1-5.7-.4z"/>',
   cross: '<path d="M9.4 9.6l13.4 13M22.6 9.8L9.6 22.8"/>',
@@ -599,9 +663,78 @@ function chip(on, idle) {
   const cls = idle ? "idle" : (on ? "on" : "off");
   return `<span class="chip ${cls}">${ic(idle ? "dash" : on ? "tick" : "cross", 3.4)}</span>`;
 }
-function tile(id, icon, name, meta, big) {
+/* ---------- storage badges ---------- */
+const STORAGE_META = {
+  icloud:  { icon: "cloud",      label: "iCloud" },
+  dropbox: { icon: "dropboxbox", label: "Dropbox" },
+  gdrive:  { icon: "gdrive",     label: "Google Drive" },
+  web:     { icon: "globe",      label: "Web (claude.ai)" },
+  macbook: { icon: "laptop",     label: "MacBook Pro" },
+  amshome: { icon: "desktopmac", label: "AMS Home (Mac)" },
+  iphone:  { icon: "iphone",     label: "iPhone" },
+  other:   { icon: "question",   label: "Other" },
+};
+let storageMap = {};
+
+function sbadge(sid) {
+  const kind = storageMap[sid] || "macbook";
+  const m = STORAGE_META[kind];
+  return `<span class="sbadge" data-tip="Stored on: ${m.label} — click to change"
+    onclick="openStorageMenu(event, '${sid}')">${ic(m.icon, 2.4)}</span>`;
+}
+
+function openStorageMenu(evt, sid) {
+  evt.stopPropagation();
+  const menu = document.getElementById("smenu");
+  const cur = storageMap[sid] || "macbook";
+  const groups = [
+    ["Synced", ["icloud", "dropbox", "gdrive", "web"]],
+    ["On a device", ["macbook", "amshome", "iphone"]],
+    ["", ["other"]],
+  ];
+  menu.innerHTML = groups.map(([title, kinds]) =>
+    (title ? `<div class="mtitle">${title}</div>` : "") +
+    kinds.map(k => `<div class="mopt${k === cur ? " sel" : ""}" onclick="setStorage('${sid}','${k}')">
+      ${ic(STORAGE_META[k].icon, 2.2)}${STORAGE_META[k].label}</div>`).join("")
+  ).join("");
+  menu.style.display = "block";
+  const r = evt.currentTarget.getBoundingClientRect();
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let x = Math.min(r.left, window.innerWidth - mw - 10);
+  let y = r.bottom + 6;
+  if (y + mh > window.innerHeight - 10) y = r.top - mh - 6;
+  menu.style.left = x + "px";
+  menu.style.top = Math.max(8, y) + "px";
+}
+
+async function setStorage(sid, kind) {
+  storageMap[sid] = kind;
+  document.getElementById("smenu").style.display = "none";
+  try {
+    const r = await fetch("/api/storage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(storageMap),
+    });
+    if (r.ok) storageMap = await r.json();
+  } catch (e) { toast("Could not save storage choice"); }
+  renderBadges();
+}
+
+function renderBadges() {
+  if (sLast) renderTiles(sLast);
+  document.getElementById("statusBadge").innerHTML = sbadge("panel-status");
+  document.getElementById("chkBadge").innerHTML = sbadge("panel-checklist");
+}
+
+document.addEventListener("click", e => {
+  const menu = document.getElementById("smenu");
+  if (menu.style.display === "block" && !menu.contains(e.target)) menu.style.display = "none";
+});
+
+function tile(id, icon, name, meta, big, badgeId) {
   return `<div class="tile${big ? " big" : ""}" onclick="openTarget('${id}', '${name.replace(/'/g, "\\'")}')">
-    ${ic(icon)}<div><div class="name">${name}</div><div class="meta">${meta}</div></div></div>`;
+    ${ic(icon)}<div><div class="name">${name}</div><div class="meta">${meta}</div></div>${sbadge(badgeId || id)}</div>`;
 }
 function fmtSEK(n) {
   return (n < 0 ? "−" : "") + Math.abs(Math.round(n)).toLocaleString("sv-SE");
@@ -638,16 +771,25 @@ function renderMonths(s) {
   </div>`;
   document.getElementById("months").innerHTML = header + s.months.slice().reverse().map(m => {
     const done = [m.report, m.ledger, m.workbook, m.dashboard].filter(Boolean).length;
-    const isDue = !m.isCurrent && !m.report;   // a finished month whose report hasn't been run
+    // A finished month's report becomes due on dueDay of the FOLLOWING month —
+    // bank statements need time to settle before the export is complete.
+    const [yy, mm] = m.month.split("-").map(Number);
+    const dueDate = new Date(yy, mm, s.dueDay || 8);   // mm is 1-based, so this lands in the next month
+    const ended = !m.isCurrent && !m.report;
+    const now = new Date(s.now);
+    const isDue = ended && now >= dueDate;
+    const isSettling = ended && now < dueDate;
     let overall, subtext;
     if (done === 4) overall = `<span class="overall done">Complete</span>`;
     else if (m.isCurrent && done === 0) overall = `<span class="overall due">Not run yet</span>`;
     else if (isDue) overall = `<span class="overall duenow">Due — run this month</span>`;
+    else if (isSettling) overall = `<span class="overall due">Due ${dueDate.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>`;
     else overall = `<span class="overall part">${done} of 4</span>`;
     if (m.report) subtext = "report " + fmtDate(m.reportMtime);
     else if (isDue) subtext = "time to export & run";
+    else if (isSettling) subtext = "bank statements settling";
     else subtext = "no report yet";
-    const idle = m.isCurrent && done === 0;
+    const idle = (m.isCurrent && done === 0) || isSettling;
     return `<div class="mrow${m.report ? " clickable" : ""}"
       ${m.report ? `onclick="openTarget('report-${m.month}', '${monthLabel(m.month)} report')"` : ""}>
       <div class="mname">${monthLabel(m.month)}
@@ -682,7 +824,7 @@ function renderTiles(s) {
     tile("ledger", "notebook", "Monthly ledger", "Updated " + fmtDate(s.ledgerMtime));
 
   document.getElementById("notes").innerHTML =
-    (latest ? tile("report-" + latest.month, "document", "Latest report", monthLabel(latest.month)) : "") +
+    (latest ? tile("report-" + latest.month, "document", "Latest report", monthLabel(latest.month), false, "latest-report") : "") +
     tile("expenses-log", "pencil", "Expenses log", "Manual cash spend") +
     tile("wealth-log", "bank", "Wealth log", "Account balances") +
     tile("canonical", "compass", "Canonical state", "The system, today") +
@@ -704,10 +846,13 @@ async function load() {
   err.style.display = "none";
   let s = null;
   try {
+    try { storageMap = await (await fetch("/api/storage")).json(); } catch (e) { /* badges fall back */ }
     s = await (await fetch("/api/status")).json();
+    sLast = s;
     renderKpis(s);
     renderMonths(s);
     renderTiles(s);
+    renderBadges();
     if (s.workbookError) {
       err.textContent = "Workbook status could not be read: " + s.workbookError;
       err.style.display = "block";
@@ -722,6 +867,7 @@ async function load() {
 /* ---------- checklist ---------- */
 let chk = null;       // {resetDay, periodStart, items:[{id,text,done}]}
 let editingId = null;
+let sLast = null;     // last /api/status payload, for badge re-renders
 
 function monthBefore(ym) {
   let [y, m] = ym.split("-").map(Number);
@@ -781,6 +927,9 @@ function renderChecklist() {
   const sel = document.getElementById("resetday");
   sel.innerHTML = Array.from({ length: 28 }, (_, i) =>
     `<option value="${i + 1}"${i + 1 === chk.resetDay ? " selected" : ""}>${i + 1}</option>`).join("");
+  const dsel = document.getElementById("dueday");
+  dsel.innerHTML = Array.from({ length: 28 }, (_, i) =>
+    `<option value="${i + 1}"${i + 1 === (chk.dueDay || 8) ? " selected" : ""}>${i + 1}</option>`).join("");
 
   const box = document.getElementById("chkitems");
   if (!chk.items.length) {
@@ -883,6 +1032,11 @@ document.getElementById("chkgear").addEventListener("click", () => {
 document.getElementById("resetday").addEventListener("change", e => {
   chk.resetDay = parseInt(e.target.value, 10);
   saveChecklist();
+});
+document.getElementById("dueday").addEventListener("change", e => {
+  chk.dueDay = parseInt(e.target.value, 10);
+  saveChecklist();
+  if (sLast) { sLast.dueDay = chk.dueDay; renderMonths(sLast); }
 });
 document.getElementById("clearnow").addEventListener("click", () => {
   chk.items.forEach(i => { i.done = false; });

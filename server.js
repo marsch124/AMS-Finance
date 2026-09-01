@@ -28,6 +28,7 @@ const WORKBOOK = path.join(BUDGETING, CONFIG.workbookFile);
 const LEDGER = path.join(REPORTS, "monthly-ledger.csv");
 const DASH_DATA = path.join(REPORTS, "dashboard-data.json");
 const CHECKLIST = path.join(APP_DIR, "checklist.json");
+const STORAGE = path.join(APP_DIR, "storage.json");
 
 const DASH_SPEND_URL = CONFIG.dashSpendUrl;
 const DASH_BUDGET_URL = CONFIG.dashBudgetUrl;
@@ -159,9 +160,13 @@ function buildStatus() {
   const budgetInfo = budgetDashboardInfo();
   const budgetThrough = parseMonthLabel(budgetInfo.through);
 
+  let dueDay = 8;
+  try { dueDay = loadChecklist().dueDay; } catch (e) { /* default stands */ }
+
   return {
     now: now.toISOString(),
     currentMonth,
+    dueDay,
     months,
     workbookError: wb.error || null,
     workbookMtime: mtimeOf(WORKBOOK),
@@ -199,10 +204,14 @@ function periodStartFor(resetDay, now) {
 }
 
 function sanitizeChecklist(raw) {
-  const out = { resetDay: 1, periodStart: null, items: [] };
+  // dueDay: a finished month's report only counts as "due" from this day of the
+  // following month (bank statements need time to settle). Default: the 8th.
+  const out = { resetDay: 1, dueDay: 8, periodStart: null, items: [] };
   if (raw && typeof raw === "object") {
     const rd = parseInt(raw.resetDay, 10);
     if (rd >= 1 && rd <= 28) out.resetDay = rd;
+    const dd = parseInt(raw.dueDay, 10);
+    if (dd >= 1 && dd <= 28) out.dueDay = dd;
     if (typeof raw.periodStart === "string") out.periodStart = raw.periodStart;
     if (Array.isArray(raw.items)) {
       const LINKS = ["report", "ledger", "workbook", "dashboard", "dashbudget"];
@@ -254,6 +263,41 @@ function saveChecklist(data) {
   fs.renameSync(tmp, CHECKLIST);
 }
 
+/* ---------- storage badges ---------- */
+
+const STORAGE_KINDS = ["icloud", "dropbox", "gdrive", "web", "macbook", "amshome", "iphone", "other"];
+const STORAGE_DEFAULTS = {
+  "panel-status": "macbook", "panel-checklist": "macbook",
+  "dash-spend": "web", "dash-budget": "web",
+  "workbook": "macbook", "weekly": "macbook", "ledger": "macbook",
+  "latest-report": "macbook", "expenses-log": "macbook", "wealth-log": "macbook",
+  "canonical": "macbook", "runbook": "macbook",
+  "budgeting-folder": "macbook", "reports-folder": "macbook", "imports-folder": "macbook",
+};
+
+function loadStorage() {
+  let saved = {};
+  try { saved = JSON.parse(fs.readFileSync(STORAGE, "utf8")); } catch (e) { /* first run */ }
+  const out = {};
+  for (const id of Object.keys(STORAGE_DEFAULTS)) {
+    out[id] = STORAGE_KINDS.includes(saved[id]) ? saved[id] : STORAGE_DEFAULTS[id];
+  }
+  return out;
+}
+
+function saveStorage(raw) {
+  const clean = {};
+  if (raw && typeof raw === "object") {
+    for (const id of Object.keys(STORAGE_DEFAULTS)) {
+      if (STORAGE_KINDS.includes(raw[id])) clean[id] = raw[id];
+    }
+  }
+  const tmp = STORAGE + ".tmp";
+  fs.writeFileSync(tmp, JSON.stringify(clean, null, 2));
+  fs.renameSync(tmp, STORAGE);
+  return loadStorage();
+}
+
 /* ---------- open targets (whitelist) ---------- */
 
 function openTargets(id) {
@@ -292,8 +336,22 @@ function send(res, code, body, type) {
   res.end(body);
 }
 
+function appVersion() {
+  // single source of truth: the visible version in the page footer
+  try {
+    const m = fs.readFileSync(path.join(APP_DIR, "index.html"), "utf8")
+      .match(/AMS Finance Hub v([\d.]+)/);
+    return m ? m[1] : null;
+  } catch (e) { return null; }
+}
+
+// AMS Main Hub may ask this engine for its version — allow only those origins
+const CORS_ORIGINS = ["https://marsch124.github.io", "http://localhost:7794", "http://127.0.0.1:7794"];
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, "http://localhost");
+  const origin = req.headers.origin || "";
+  if (CORS_ORIGINS.includes(origin)) res.setHeader("Access-Control-Allow-Origin", origin);
 
   if (url.pathname === "/" || url.pathname === "/index.html") {
     fs.readFile(path.join(APP_DIR, "index.html"), (err, data) => {
@@ -302,7 +360,7 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
-  if (url.pathname === "/health") return send(res, 200, JSON.stringify({ ok: true }));
+  if (url.pathname === "/health") return send(res, 200, JSON.stringify({ ok: true, version: appVersion() }));
   if (url.pathname === "/api/status") {
     try { return send(res, 200, JSON.stringify(buildStatus())); }
     catch (e) { return send(res, 500, JSON.stringify({ error: String(e) })); }
@@ -326,6 +384,22 @@ const server = http.createServer((req, res) => {
       } catch (e) {
         send(res, 400, JSON.stringify({ error: String(e) }));
       }
+    });
+    return;
+  }
+  if (url.pathname === "/api/storage" && req.method === "GET") {
+    try { return send(res, 200, JSON.stringify(loadStorage())); }
+    catch (e) { return send(res, 500, JSON.stringify({ error: String(e) })); }
+  }
+  if (url.pathname === "/api/storage" && req.method === "POST") {
+    let body = "";
+    req.on("data", chunk => {
+      body += chunk;
+      if (body.length > 100000) req.destroy();
+    });
+    req.on("end", () => {
+      try { send(res, 200, JSON.stringify(saveStorage(JSON.parse(body)))); }
+      catch (e) { send(res, 400, JSON.stringify({ error: String(e) })); }
     });
     return;
   }
