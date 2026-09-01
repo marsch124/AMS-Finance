@@ -72,7 +72,13 @@
 
   .layout { display: flex; gap: 18px; align-items: flex-start; }
   main.col { flex: 1; min-width: 0; }
-  aside.panel { width: 292px; flex-shrink: 0; position: sticky; top: 16px; }
+  aside.panel { width: 240px; flex-shrink: 0; position: sticky; top: 16px; }
+  /* the checklist is once-a-month data — it rests dimmed until the mouse visits */
+  .chk { background: rgba(255,255,255,.45); box-shadow: none; opacity: .72;
+         filter: grayscale(.5);
+         transition: opacity .25s, filter .25s, background .25s, box-shadow .25s; }
+  .chk:hover, .chk:focus-within { background: var(--card); opacity: 1; filter: none;
+                                  box-shadow: var(--shadow); }
   @media (max-width: 900px) {
     .layout { flex-direction: column; }
     aside.panel { width: 100%; position: static; }
@@ -433,7 +439,9 @@
     <details>
       <summary>The monthly checklist</summary>
       <div class="gbody">
-        <p>The panel on the right is your working checklist for the month. Items are <b>numbered</b> in
+        <p>The panel on the right is your working checklist for the month. Because it's once-a-month
+        data, it <b>rests dimmed and narrow</b> at the side — move the mouse over it and it wakes to
+        full colour, fully usable. Items are <b>numbered</b> in
         order, because the routine is a sequence. Everything is saved instantly to a small file next to
         the app, so it survives restarts and works in any browser.</p>
         <ul>
@@ -574,6 +582,8 @@
       <summary>Version log</summary>
       <div class="gbody">
         <table class="gver">
+          <tr><td>v1.11</td><td>The monthly checklist steps back: narrower, and dimmed to grey while resting — it wakes to full colour the moment the mouse visits. Once-a-month data shouldn't shout all month.</td></tr>
+          <tr><td>v1.10</td><td>The engine now serves AMS Main Hub two more answers (to the hub alone, nothing public): the monthly net-worth series read straight from the budget workbook, and a compact this-month status — powering the hub’s new Wealth and Finance-month mini panels.</td></tr>
           <tr><td>v1.9</td><td>Reports now become due on a configurable day of the following month (default the 8th — bank statements need a week to settle); until then the board shows a calm grey "Due [date] · bank statements settling" instead of the amber nudge. The engine also announces its version, so AMS Main Hub's Finance card can show a live version chip.</td></tr>
           <tr><td>v1.8</td><td>Storage badges: a hand-drawn symbol on every panel's top-right corner showing where that data lives (iCloud / Dropbox / Google Drive / web / MacBook Pro / AMS Home / iPhone / other) — click to change, choices saved locally.</td></tr>
           <tr><td>v1.7</td><td>Code published on GitHub (marsch124/AMS-Finance). Personal settings — file paths and dashboard links — moved to config.json, which stays on this Mac and is never published.</td></tr>
@@ -589,7 +599,7 @@
     </details>
   </div>
 
-  <footer>AMS Finance Hub v1.9 · runs locally on this Mac (port 7780) · nothing leaves the machine</footer>
+  <footer>AMS Finance Hub v1.11 · runs locally on this Mac (port 7780) · nothing leaves the machine</footer>
 </div>
 <div id="toast"></div>
 <div id="smenu"></div>

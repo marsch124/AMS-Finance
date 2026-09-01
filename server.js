@@ -345,8 +345,42 @@ function appVersion() {
   } catch (e) { return null; }
 }
 
-// AMS Main Hub may ask this engine for its version — allow only those origins
+// AMS Main Hub may ask this engine for its version, the net-worth series and
+// a compact month status — allow only those origins
 const CORS_ORIGINS = ["https://marsch124.github.io", "http://localhost:7794", "http://127.0.0.1:7794"];
+
+/* ---------- hub endpoints (net worth + compact status) ---------- */
+
+function wealthSeries() {
+  const out = execFileSync("/usr/bin/python3",
+    [path.join(APP_DIR, "wealth_series.py")], { timeout: 15000 });
+  return JSON.parse(out.toString());
+}
+
+// both endpoints shell out to python — cache for a minute so the hub can
+// poke them freely
+const hubCache = { wealth: { at: 0, data: null }, status: { at: 0, data: null } };
+
+function cachedWealth() {
+  if (!hubCache.wealth.data || Date.now() - hubCache.wealth.at > 60000) {
+    hubCache.wealth = { at: Date.now(), data: wealthSeries() };
+  }
+  return hubCache.wealth.data;
+}
+
+function cachedHubStatus() {
+  if (!hubCache.status.data || Date.now() - hubCache.status.at > 60000) {
+    const st = buildStatus();
+    const current = st.months.find(m => m.isCurrent) || null;
+    const previous = st.months.filter(m => !m.isCurrent).pop() || null;
+    // deliberately compact: no config URLs or paths leave the engine here
+    hubCache.status = { at: Date.now(), data: {
+      ok: true, now: st.now, currentMonth: st.currentMonth, dueDay: st.dueDay,
+      current, previous,
+    } };
+  }
+  return hubCache.status.data;
+}
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, "http://localhost");
@@ -361,6 +395,16 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname === "/health") return send(res, 200, JSON.stringify({ ok: true, version: appVersion() }));
+  if (url.pathname === "/wealth") {
+    try {
+      const w = cachedWealth();
+      return send(res, 200, JSON.stringify({ ok: true, currency: "SEK", series: w.series || [] }));
+    } catch (e) { return send(res, 500, JSON.stringify({ ok: false, error: String(e) })); }
+  }
+  if (url.pathname === "/hubstatus") {
+    try { return send(res, 200, JSON.stringify(cachedHubStatus())); }
+    catch (e) { return send(res, 500, JSON.stringify({ ok: false, error: String(e) })); }
+  }
   if (url.pathname === "/api/status") {
     try { return send(res, 200, JSON.stringify(buildStatus())); }
     catch (e) { return send(res, 500, JSON.stringify({ error: String(e) })); }
