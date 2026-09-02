@@ -7,6 +7,7 @@
   "weeklyFile": "Your Weekly Follow-up.xlsx",
   "budgetSheet": "AMS Main Budget",
   "firstMonth": "2026-03",
+  "hubPath": "OPTIONAL - where AMS MainHub lives; defaults to the folder beside this one",
   "dashSpendUrl": "https://claude.ai/code/artifact/YOUR-MONTHLY-SPEND-DASHBOARD",
   "dashBudgetUrl": "https://claude.ai/code/artifact/YOUR-MAIN-FINANCE-DASHBOARD"
 }

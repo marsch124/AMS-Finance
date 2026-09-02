@@ -349,6 +349,37 @@ function appVersion() {
 // a compact month status — allow only those origins
 const CORS_ORIGINS = ["https://marsch124.github.io", "http://localhost:7794", "http://127.0.0.1:7794"];
 
+/* ---------- serving AMS Main Hub locally ---------- */
+
+// A browser will not let the hub, served from https://…github.io, talk to
+// http://localhost. Serving the hub from this engine puts both at the same
+// address, so its Wealth and Finance tiles always have an answer on this Mac.
+// Sits beside this app by default; override with "hubPath" in config.json.
+const HUB_DIR = path.resolve(
+  CONFIG.hubPath ? expand(CONFIG.hubPath) : path.join(APP_DIR, "..", "AMS MainHub")
+);
+const HUB_MIME = {
+  ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8", ".webmanifest": "application/manifest+json",
+  ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon",
+  ".txt": "text/plain; charset=utf-8",
+};
+
+function serveHub(rel, res) {
+  if (rel === "" || rel.endsWith("/")) rel += "index.html";
+  // Served live from disk, so a service worker would only add a stale cached
+  // layer on top — deliberately withheld. (The page's register() call catches.)
+  if (rel === "service-worker.js") return send(res, 404, "not served locally", "text/plain");
+  const file = path.resolve(HUB_DIR, rel);
+  if (file !== HUB_DIR && !file.startsWith(HUB_DIR + path.sep)) {
+    return send(res, 403, "forbidden", "text/plain");     // no climbing out of the folder
+  }
+  fs.readFile(file, (err, data) => {
+    if (err) return send(res, 404, "not found", "text/plain");
+    send(res, 200, data, HUB_MIME[path.extname(file).toLowerCase()] || "application/octet-stream");
+  });
+}
+
 /* ---------- hub endpoints (net worth + compact status) ---------- */
 
 function wealthSeries() {
@@ -394,6 +425,11 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
+  if (url.pathname === "/hub") {
+    res.writeHead(302, { Location: "/hub/" });
+    return res.end();
+  }
+  if (url.pathname.startsWith("/hub/")) return serveHub(url.pathname.slice(5), res);
   if (url.pathname === "/health") return send(res, 200, JSON.stringify({ ok: true, version: appVersion() }));
   if (url.pathname === "/wealth") {
     try {
