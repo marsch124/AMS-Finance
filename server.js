@@ -192,8 +192,8 @@ const DEFAULT_ITEMS = [
   "Run the monthly report with Sam",
   "Resolve flagged merchants + name ticket buys",
   "Write actuals to the budget workbook",
-  "Refresh AMS Monthly Spend dashboard",
-  "Refresh AMS Main Finance Dashboard",
+  "Refresh the Spend Dashboard",
+  "Refresh the Finance Dashboard",
 ];
 
 function periodStartFor(resetDay, now) {
@@ -349,6 +349,14 @@ function appVersion() {
 // a compact month status — allow only those origins
 const CORS_ORIGINS = ["https://marsch124.github.io", "http://localhost:7794", "http://127.0.0.1:7794"];
 
+// The dashboard addresses and the newest report go only to the hub served by
+// this engine itself (localhost:7780/hub): a same-address request carries no
+// Origin header, and a copy opened via 127.0.0.1 names this port. The published
+// hub on the web never receives them — same rule as /hubstatus.
+function sameEngineOrigin(origin) {
+  return !origin || origin === `http://localhost:${PORT}` || origin === `http://127.0.0.1:${PORT}`;
+}
+
 /* ---------- serving AMS Main Hub locally ---------- */
 
 // A browser will not let the hub, served from https://…github.io, talk to
@@ -399,6 +407,19 @@ function cachedWealth() {
   return hubCache.wealth.data;
 }
 
+// what the Main Hub's FINANCE shelf needs: where each dashboard is and how far
+// behind it is, plus the newest report so its card can ask /api/open for it
+function hubLinks() {
+  const st = buildStatus();
+  const latest = st.months.slice().reverse().find(m => m.report) || null;
+  return {
+    ok: true,
+    spend:  { url: DASH_SPEND_URL  || null, behind: st.dashSpend.behind },
+    budget: { url: DASH_BUDGET_URL || null, behind: st.dashBudget.behind },
+    report: latest ? { id: "report-" + latest.month, month: latest.month } : null,
+  };
+}
+
 function cachedHubStatus() {
   if (!hubCache.status.data || Date.now() - hubCache.status.at > 60000) {
     const st = buildStatus();
@@ -439,6 +460,11 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === "/hubstatus") {
     try { return send(res, 200, JSON.stringify(cachedHubStatus())); }
+    catch (e) { return send(res, 500, JSON.stringify({ ok: false, error: String(e) })); }
+  }
+  if (url.pathname === "/hublinks") {
+    if (!sameEngineOrigin(origin)) return send(res, 403, JSON.stringify({ ok: false, error: "local hub only" }));
+    try { return send(res, 200, JSON.stringify(hubLinks())); }
     catch (e) { return send(res, 500, JSON.stringify({ ok: false, error: String(e) })); }
   }
   if (url.pathname === "/api/status") {

@@ -15,11 +15,11 @@ its backup; there is no hosted version and no GitHub Pages site.
 - **Monthly reporting status** — a spreadsheet-style board with one row per month and four
   live checks: Report (Obsidian report exists), Ledger (row in monthly-ledger.csv),
   Workbook (actuals really written into the budget Excel — the app parses the xlsx itself,
-  standard library only), Dashboard (month included in the AMS Monthly Spend dashboard).
+  standard library only), Dashboard (month included in the Spend Dashboard).
   Finished months without a report turn amber: *Due — run this month*.
 - **KPI cards** — the latest reported month's income, expenses, net, and savings rate.
-- **Dashboard tiles with staleness badges** — each published dashboard admits how many
-  months it lags behind the newest data.
+- **Dashboard tiles with staleness badges** — the Spend Dashboard and the Finance Dashboard
+  (both published on claude.ai) each admit how many months they lag behind the newest data.
 - **A monthly checklist** — numbered, editable, reorderable, resets its ticks on a chosen
   day of the month, and ⚡-linked items tick themselves when the status board sees the
   work is done.
@@ -57,4 +57,4 @@ lilac canvas.
 
 ## Version
 
-See the version log inside the app ("How this works" → Version log). Current: **v1.7**.
+See the version log inside the app ("How this works" → Version log). Current: **v1.13**.
