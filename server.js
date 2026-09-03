@@ -439,16 +439,23 @@ const server = http.createServer((req, res) => {
   const origin = req.headers.origin || "";
   if (CORS_ORIGINS.includes(origin)) res.setHeader("Access-Control-Allow-Origin", origin);
 
-  if (url.pathname === "/" || url.pathname === "/index.html") {
+  // The engine's front page is AMS Main Hub — the one front door on the Mac.
+  // AMS Finance.app has always opened localhost:7780, so it lands here without
+  // being rebuilt. The Finance Hub itself lives at /finance/.
+  if (url.pathname === "/" || url.pathname === "/index.html" || url.pathname === "/hub") {
+    res.writeHead(302, { Location: "/hub/" });
+    return res.end();
+  }
+  if (url.pathname === "/finance") {
+    res.writeHead(302, { Location: "/finance/" });
+    return res.end();
+  }
+  if (url.pathname === "/finance/" || url.pathname === "/finance/index.html") {
     fs.readFile(path.join(APP_DIR, "index.html"), (err, data) => {
       if (err) return send(res, 500, "index.html missing", "text/plain");
       send(res, 200, data, "text/html; charset=utf-8");
     });
     return;
-  }
-  if (url.pathname === "/hub") {
-    res.writeHead(302, { Location: "/hub/" });
-    return res.end();
   }
   if (url.pathname.startsWith("/hub/")) return serveHub(url.pathname.slice(5), res);
   if (url.pathname === "/health") return send(res, 200, JSON.stringify({ ok: true, version: appVersion() }));
@@ -522,5 +529,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, "127.0.0.1", () => {
-  console.log(`AMS Finance Hub running at http://localhost:${PORT}`);
+  console.log(`AMS Finance engine running — Main Hub at http://localhost:${PORT}/hub/, Finance Hub at http://localhost:${PORT}/finance/`);
 });

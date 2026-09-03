@@ -7,7 +7,8 @@ part of it.
 **Unlike the other AMS apps, this one is not a web app.** It runs entirely on the Mac it is
 installed on: a small Node.js server (the "engine", port 7780) reads the real files — the
 budget Excel workbook, the Obsidian monthly reports, the ledger, the dashboard data — and
-serves a single local page. Nothing is sent anywhere. This repository is the app's code and
+serves the pages locally: AMS Main Hub at `localhost:7780` (the front door) and this Finance Hub
+at `localhost:7780/finance`. Nothing is sent anywhere. This repository is the app's code and
 its backup; there is no hosted version and no GitHub Pages site.
 
 ## What it shows
@@ -37,7 +38,7 @@ lilac canvas.
 | `server.js` | The engine — local HTTP server, status checks, checklist storage, file opening |
 | `index.html` | The entire interface (no build step, no dependencies) |
 | `workbook_status.py` | Reads the budget workbook's monthly actuals columns (stdlib only) |
-| `launcher.applescript` | Source of **AMS Finance.app** — starts the engine and opens AMS Main Hub (localhost:7780/hub) |
+| `launcher.applescript` | Source of **AMS Finance.app** — starts the engine and opens localhost:7780, the Main Hub |
 | `engine.applescript` | Source of **AMS Finance Engine.app** — headless start at login |
 | `config.example.json` | Template for the personal configuration |
 | `config.json` | **Not in the repo** — the real paths and dashboard links, local only |
@@ -51,8 +52,8 @@ lilac canvas.
    `osacompile -o "AMS Finance.app" launcher.applescript` and
    `osacompile -o "AMS Finance Engine.app" engine.applescript`
 4. Double-click **AMS Finance.app**. It opens AMS Main Hub, served by the engine at
-   `localhost:7780/hub`; the Finance Hub is a card on its FINANCE shelf. The first launch asks
-   for permission to read the Documents folder — click Allow.
+   `localhost:7780`; the Finance Hub is a card on its FINANCE shelf (`localhost:7780/finance`).
+   The first launch asks for permission to read the Documents folder — click Allow.
 5. Optional autostart: a LaunchAgent that opens the Engine app at login
    (`~/Library/LaunchAgents/com.ams.financehub.plist`).
 

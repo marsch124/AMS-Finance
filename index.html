@@ -296,6 +296,7 @@
       <h1>AMS Finance Hub <span class="accent" id="curmonth"></span></h1>
       <div class="headright">
         <div class="today" id="today"></div>
+        <a class="refresh" href="/hub/" style="text-decoration:none">⌂ Main Hub</a>
         <button class="refresh" onclick="load()">↻ Refresh</button>
       </div>
     </header>
@@ -515,8 +516,9 @@
         <ul>
           <li><b>At login</b> the engine starts by itself, silently — the hub is always ready.</li>
           <li><b>AMS Finance.app</b> (double-click, or from the Dock) starts the engine if needed and
-              opens <b>AMS Main Hub</b> at localhost:7780/hub — the front door to everything. This
-              Finance Hub is one card away, on the hub's FINANCE shelf.</li>
+              opens <b>AMS Main Hub</b> — the front door to everything, at localhost:7780. This
+              Finance Hub is one card away, on the hub's FINANCE shelf, at localhost:7780/finance.
+              The <b>⌂ Main Hub</b> button in the masthead takes you back.</li>
           <li>The engine writes its diary to <i>~/Library/Logs/AMS-Finance.log</i>.</li>
         </ul>
         <p><b>If a page won't load:</b> double-click AMS Finance.app — that heals it. If a macOS
@@ -562,7 +564,7 @@
           <dt>Dashboard</dt><dd>A published web page with charts, built by Sam. The <b>Spend Dashboard</b> shows a month's spending in detail; the <b>Finance Dashboard</b> shows budget, net worth and the 2026–2038 runway. (Until v1.13 they were called "AMS Monthly Spend" and "AMS Main Finance Dashboard" — same pages, plainer names.)</dd>
           <dt>Due</dt><dd>A month that has ended but whose report hasn't been run yet. It counts as due from the due day of the following month (default the 8th); before that it shows "bank statements settling".</dd>
           <dt>Engine</dt><dd>The small local server (port 7780) that reads your files and serves this page.</dd>
-          <dt>Hub</dt><dd>A front door. AMS Main Hub is the front door to everything (on this Mac: localhost:7780/hub); this Finance Hub is the front door to the monthly money process. A hub is where you start; a dashboard is a page you read.</dd>
+          <dt>Hub</dt><dd>A front door. AMS Main Hub is the front door to everything (on this Mac: localhost:7780); this Finance Hub (localhost:7780/finance) is the front door to the monthly money process. A hub is where you start; a dashboard is a page you read.</dd>
           <dt>KPI</dt><dd>Key Performance Indicator — a headline number worth watching. Here: income, expenses, net, savings rate.</dd>
           <dt>Ledger</dt><dd>monthly-ledger.csv — one row per month and category with actual vs budget. The long-term memory of the reporting system.</dd>
           <dt>LÖN</dt><dd>Swedish for salary. Income in the reports counts LÖN rows only.</dd>
@@ -584,7 +586,7 @@
       <summary>Version log</summary>
       <div class="gbody">
         <table class="gver">
-          <tr><td>v1.13</td><td>Plainer names and one more answer for the Main Hub. The two published dashboards are now simply the <b>Spend Dashboard</b> and the <b>Finance Dashboard</b> — same pages, same addresses, fewer words to keep apart (they were "AMS Monthly Spend" and "AMS Main Finance Dashboard"). Existing checklist items keep whatever text you gave them. And the engine answers <b>/hublinks</b> — the two dashboard addresses, how many months each is behind, and the newest report — but only to the Main Hub served from this engine's own address (localhost:7780/hub), never to the published copy on the web. The hub's new FINANCE shelf is built from it. And <b>AMS Finance.app</b> in the Dock now opens the Main Hub (localhost:7780/hub) instead of this page — one front door on the Mac; rebuild the app once with osacompile to pick that up.</td></tr>
+          <tr><td>v1.13</td><td>Plainer names and one more answer for the Main Hub. The two published dashboards are now simply the <b>Spend Dashboard</b> and the <b>Finance Dashboard</b> — same pages, same addresses, fewer words to keep apart (they were "AMS Monthly Spend" and "AMS Main Finance Dashboard"). Existing checklist items keep whatever text you gave them. And the engine answers <b>/hublinks</b> — the two dashboard addresses, how many months each is behind, and the newest report — but only to the Main Hub served from this engine's own address (localhost:7780/hub), never to the published copy on the web. The hub's new FINANCE shelf is built from it. And the engine's front page is now the Main Hub: <b>localhost:7780</b> (what AMS Finance.app in the Dock has always opened) lands on the hub, and this Finance Hub has moved to <b>localhost:7780/finance</b> — one front door on the Mac, nothing to rebuild. A ⌂ Main Hub button in the masthead leads back.</td></tr>
           <tr><td>v1.12</td><td>The engine now serves AMS Main Hub itself, at <b>localhost:7780/hub</b>. A browser will not let the published hub (on the web) ask this Mac for anything, so its Wealth and Finance tiles came up empty here; opened from this address the hub and the engine share one address and those tiles always fill in. This local copy is read straight from the hub's folder, so it is always the newest version and never cached.</td></tr>
           <tr><td>v1.11</td><td>The monthly checklist steps back: narrower, and dimmed to grey while resting — it wakes to full colour the moment the mouse visits. Once-a-month data shouldn't shout all month.</td></tr>
           <tr><td>v1.10</td><td>The engine now serves AMS Main Hub two more answers (to the hub alone, nothing public): the monthly net-worth series read straight from the budget workbook, and a compact this-month status — powering the hub’s new Wealth and Finance-month mini panels.</td></tr>
