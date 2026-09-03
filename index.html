@@ -296,6 +296,7 @@
       <h1>AMS Finance Hub <span class="accent" id="curmonth"></span></h1>
       <div class="headright">
         <div class="today" id="today"></div>
+        <a class="refresh" href="/hub/" style="text-decoration:none">⌂ Main Hub</a>
         <button class="refresh" onclick="load()">↻ Refresh</button>
       </div>
     </header>
@@ -385,7 +386,7 @@
           <li><b>Ledger</b> — the month has its row in <i>monthly-ledger.csv</i>.</li>
           <li><b>Workbook</b> — the month's actuals column (J–U) in the budget Excel actually contains numbers.
               The hub opens the workbook file and looks at the 16 category rows itself.</li>
-          <li><b>Dashboard</b> — the month is included in the AMS Monthly Spend dashboard's data.</li>
+          <li><b>Dashboard</b> — the month is included in the Spend Dashboard's data.</li>
         </ul>
         <p>The Status pill sums it up: <b>Complete</b> (teal) = all four green. <b>k of 4</b> (amber) =
         partially done. <b>Not run yet</b> (grey outline) = the current month, which is normal until the
@@ -406,7 +407,7 @@
       <div class="gbody">
         <p>The four cards under the masthead show the <b>latest reported month's</b> headline numbers:
         income, expenses, net, and savings rate. They come from the same data file that feeds the AMS
-        Monthly Spend dashboard, so they always match it.</p>
+        Spend Dashboard, so they always match it.</p>
         <ul>
           <li><b>Net</b> = income − expenses. Green when positive, red when negative.</li>
           <li><b>Savings rate</b> = net ÷ income, as a percentage.</li>
@@ -424,9 +425,9 @@
         <p>The two dashboard tiles open the published web dashboards. Each tile also admits when its
         dashboard is <b>stale</b>:</p>
         <ul>
-          <li><b>AMS Monthly Spend</b> is compared against the newest report. If a report exists that the
+          <li>The <b>Spend Dashboard</b> is compared against the newest report. If a report exists that the
               dashboard doesn't include yet, an amber badge counts the gap.</li>
-          <li><b>AMS Main Finance Dashboard</b> is compared against the workbook. If the workbook holds
+          <li>The <b>Finance Dashboard</b> is compared against the workbook. If the workbook holds
               newer actuals than the dashboard shows, the badge counts those months.</li>
         </ul>
         <div class="gex"><div class="gextitle">Example</div>
@@ -462,7 +463,7 @@
         hand afterwards, it stays unticked. Hover the lightning for a reminder of this.</p>
         <div class="gex"><div class="gextitle">Example</div>
         You run the July report with Sam. Next time the hub loads, it sees July's Report check is green
-        and ticks "Run the monthly report with Sam" for you. "Refresh AMS Main Finance Dashboard" stays
+        and ticks "Run the monthly report with Sam" for you. "Refresh the Finance Dashboard" stays
         open, because the hub can see that dashboard is still behind the workbook — the checklist and the
         status board are one connected machine.</div>
       </div>
@@ -514,11 +515,13 @@
         just its face.</p>
         <ul>
           <li><b>At login</b> the engine starts by itself, silently — the hub is always ready.</li>
-          <li><b>AMS Finance.app</b> (double-click, or from the Dock) opens the hub page, starting the
-              engine first if needed.</li>
+          <li><b>AMS Finance.app</b> (double-click, or from the Dock) starts the engine if needed and
+              opens <b>AMS Main Hub</b> — the front door to everything, at localhost:7780. This
+              Finance Hub is one card away, on the hub's FINANCE shelf, at localhost:7780/finance.
+              The <b>⌂ Main Hub</b> button in the masthead takes you back.</li>
           <li>The engine writes its diary to <i>~/Library/Logs/AMS-Finance.log</i>.</li>
         </ul>
-        <p><b>If the page won't load:</b> double-click AMS Finance.app — that heals it. If a macOS
+        <p><b>If a page won't load:</b> double-click AMS Finance.app — that heals it. If a macOS
         question about the Documents folder ever appears (for example after a system update), click
         <b>Allow</b>; the hub needs it to read the budget workbook.</p>
       </div>
@@ -541,7 +544,7 @@
           <li><b>Resolve.</b> Flagged merchants and ticket purchases were decided during the run — tick
               item 4 yourself (that judgment is yours, not a file the hub can check).</li>
           <li><b>Workbook.</b> Sam writes the actuals into column R. The board's Workbook check goes green;
-              the checklist item ⚡ ticks itself; the Main Finance Dashboard tile now says
+              the checklist item ⚡ ticks itself; the Finance Dashboard tile now says
               <i>1 month behind</i> — it hasn't caught up with the new column yet.</li>
           <li><b>Dashboards.</b> Sam refreshes both dashboards. The badges disappear, August's Dashboard
               check turns green, the row flips to teal <b>Complete</b>, both ⚡ items tick, and the KPI
@@ -558,9 +561,10 @@
           <dt>AMS</dt><dd>Anna & Martin Schabbauer — the household. The prefix all your apps share.</dd>
           <dt>Actuals</dt><dd>What was really spent in a month, per category — as opposed to budget, which is the plan. Written into the workbook's monthly columns.</dd>
           <dt>Budget workbook</dt><dd>"Martin & Anna Budget 2026-2038.xlsx" — the master Excel file. Column H holds the monthly budget; columns J–U hold each month's actuals.</dd>
-          <dt>Dashboard</dt><dd>A published web page with charts. AMS Monthly Spend shows a month's spending in detail; AMS Main Finance Dashboard shows budget, net worth and the 2026–2038 runway.</dd>
+          <dt>Dashboard</dt><dd>A published web page with charts, built by Sam. The <b>Spend Dashboard</b> shows a month's spending in detail; the <b>Finance Dashboard</b> shows budget, net worth and the 2026–2038 runway. (Until v1.13 they were called "AMS Monthly Spend" and "AMS Main Finance Dashboard" — same pages, plainer names.)</dd>
           <dt>Due</dt><dd>A month that has ended but whose report hasn't been run yet. It counts as due from the due day of the following month (default the 8th); before that it shows "bank statements settling".</dd>
           <dt>Engine</dt><dd>The small local server (port 7780) that reads your files and serves this page.</dd>
+          <dt>Hub</dt><dd>A front door. AMS Main Hub is the front door to everything (on this Mac: localhost:7780); this Finance Hub (localhost:7780/finance) is the front door to the monthly money process. A hub is where you start; a dashboard is a page you read.</dd>
           <dt>KPI</dt><dd>Key Performance Indicator — a headline number worth watching. Here: income, expenses, net, savings rate.</dd>
           <dt>Ledger</dt><dd>monthly-ledger.csv — one row per month and category with actual vs budget. The long-term memory of the reporting system.</dd>
           <dt>LÖN</dt><dd>Swedish for salary. Income in the reports counts LÖN rows only.</dd>
@@ -582,6 +586,7 @@
       <summary>Version log</summary>
       <div class="gbody">
         <table class="gver">
+          <tr><td>v1.13</td><td>Plainer names and one more answer for the Main Hub. The two published dashboards are now simply the <b>Spend Dashboard</b> and the <b>Finance Dashboard</b> — same pages, same addresses, fewer words to keep apart (they were "AMS Monthly Spend" and "AMS Main Finance Dashboard"). Existing checklist items keep whatever text you gave them. And the engine answers <b>/hublinks</b> — the two dashboard addresses, how many months each is behind, and the newest report — but only to the Main Hub served from this engine's own address (localhost:7780/hub), never to the published copy on the web. The hub's new FINANCE shelf is built from it. And the engine's front page is now the Main Hub: <b>localhost:7780</b> (what AMS Finance.app in the Dock has always opened) lands on the hub, and this Finance Hub has moved to <b>localhost:7780/finance</b> — one front door on the Mac, nothing to rebuild. A ⌂ Main Hub button in the masthead leads back.</td></tr>
           <tr><td>v1.12</td><td>The engine now serves AMS Main Hub itself, at <b>localhost:7780/hub</b>. A browser will not let the published hub (on the web) ask this Mac for anything, so its Wealth and Finance tiles came up empty here; opened from this address the hub and the engine share one address and those tiles always fill in. This local copy is read straight from the hub's folder, so it is always the newest version and never cached.</td></tr>
           <tr><td>v1.11</td><td>The monthly checklist steps back: narrower, and dimmed to grey while resting — it wakes to full colour the moment the mouse visits. Once-a-month data shouldn't shout all month.</td></tr>
           <tr><td>v1.10</td><td>The engine now serves AMS Main Hub two more answers (to the hub alone, nothing public): the monthly net-worth series read straight from the budget workbook, and a compact this-month status — powering the hub’s new Wealth and Finance-month mini panels.</td></tr>
@@ -600,7 +605,7 @@
     </details>
   </div>
 
-  <footer>AMS Finance Hub v1.12 · runs locally on this Mac (port 7780) · nothing leaves the machine</footer>
+  <footer>AMS Finance Hub v1.13 · runs locally on this Mac (port 7780) · nothing leaves the machine</footer>
 </div>
 <div id="toast"></div>
 <div id="smenu"></div>
@@ -776,7 +781,7 @@ function renderMonths(s) {
       <span class="colhead" data-tip="The monthly report exists in Obsidian">Report</span>
       <span class="colhead" data-tip="The month has its row in monthly-ledger.csv">Ledger</span>
       <span class="colhead" data-tip="Actuals are written into the budget Excel workbook">Workbook</span>
-      <span class="colhead" data-tip="The month is included in the AMS Monthly Spend dashboard">Dashboard</span>
+      <span class="colhead" data-tip="The month is included in the Spend Dashboard">Dashboard</span>
     </div>
     <div class="stathead" data-tip="Click a month to open its report in Obsidian">Status</div>
   </div>`;
@@ -820,11 +825,11 @@ function staleBadge(n) {
 function renderTiles(s) {
   const latest = s.months.slice().reverse().find(m => m.report);
   document.getElementById("dashboards").innerHTML =
-    tile("dash-spend", "bars", "AMS Monthly Spend",
+    tile("dash-spend", "bars", "Spend Dashboard",
          "Data " + fmtDate(s.dashSpend.generated) + " · months " +
          (s.dashSpend.months.length ? s.dashSpend.months[0].slice(5) + "–" + s.dashSpend.months[s.dashSpend.months.length - 1].slice(5) : "—") +
          staleBadge(s.dashSpend.behind), true) +
-    tile("dash-budget", "trend", "AMS Main Finance Dashboard",
+    tile("dash-budget", "trend", "Finance Dashboard",
          "Refreshed " + (s.dashBudget.refreshed || "—") +
          (s.dashBudget.through ? " · through " + s.dashBudget.through : "") +
          staleBadge(s.dashBudget.behind), true);

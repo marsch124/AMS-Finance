@@ -14,5 +14,7 @@ on run
 	if isRunning is not "yes" then
 		do shell script "/usr/local/bin/node " & quoted form of (appDir & "/server.js") & " >> " & quoted form of logFile & " 2>&1 & for i in $(seq 1 40); do /usr/bin/curl -s --max-time 1 http://127.0.0.1:7780/health >/dev/null && exit 0; sleep 0.25; done; exit 0"
 	end if
+	-- The engine's front page is AMS Main Hub, the front door to everything;
+	-- the Finance Hub is one card away, on the hub's FINANCE shelf.
 	do shell script "/usr/bin/open http://localhost:7780"
 end run
