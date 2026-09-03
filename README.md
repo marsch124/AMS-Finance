@@ -37,7 +37,7 @@ lilac canvas.
 | `server.js` | The engine — local HTTP server, status checks, checklist storage, file opening |
 | `index.html` | The entire interface (no build step, no dependencies) |
 | `workbook_status.py` | Reads the budget workbook's monthly actuals columns (stdlib only) |
-| `launcher.applescript` | Source of **AMS Finance.app** — starts the engine and opens the hub |
+| `launcher.applescript` | Source of **AMS Finance.app** — starts the engine and opens AMS Main Hub (localhost:7780/hub) |
 | `engine.applescript` | Source of **AMS Finance Engine.app** — headless start at login |
 | `config.example.json` | Template for the personal configuration |
 | `config.json` | **Not in the repo** — the real paths and dashboard links, local only |
@@ -50,8 +50,9 @@ lilac canvas.
 3. Build the two apps (Terminal, from this folder):
    `osacompile -o "AMS Finance.app" launcher.applescript` and
    `osacompile -o "AMS Finance Engine.app" engine.applescript`
-4. Double-click **AMS Finance.app**. The first launch asks for permission to read the
-   Documents folder — click Allow.
+4. Double-click **AMS Finance.app**. It opens AMS Main Hub, served by the engine at
+   `localhost:7780/hub`; the Finance Hub is a card on its FINANCE shelf. The first launch asks
+   for permission to read the Documents folder — click Allow.
 5. Optional autostart: a LaunchAgent that opens the Engine app at login
    (`~/Library/LaunchAgents/com.ams.financehub.plist`).
 
