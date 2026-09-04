@@ -586,6 +586,7 @@
       <summary>Version log</summary>
       <div class="gbody">
         <table class="gver">
+          <tr><td>v1.14</td><td>The engine opens files and folders for the Main Hub. A path pasted into the hub's <b>Your links</b> (Finder: right-click → hold ⌥ → Copy as Pathname) becomes a card, and a tap on it asks the engine's new <b>/api/openpath</b> to open the file in its app or the folder in the Finder. The engine answers only the hub served from its own address (localhost:7780/hub), never the published copy on the web, and only for something that exists inside your home folder or on an attached disk. Nothing is stored on the engine's side.</td></tr>
           <tr><td>v1.13</td><td>Plainer names and one more answer for the Main Hub. The two published dashboards are now simply the <b>Spend Dashboard</b> and the <b>Finance Dashboard</b> — same pages, same addresses, fewer words to keep apart (they were "AMS Monthly Spend" and "AMS Main Finance Dashboard"). Existing checklist items keep whatever text you gave them. And the engine answers <b>/hublinks</b> — the two dashboard addresses, how many months each is behind, and the newest report — but only to the Main Hub served from this engine's own address (localhost:7780/hub), never to the published copy on the web. The hub's new FINANCE shelf is built from it. And the engine's front page is now the Main Hub: <b>localhost:7780</b> (what AMS Finance.app in the Dock has always opened) lands on the hub, and this Finance Hub has moved to <b>localhost:7780/finance</b> — one front door on the Mac, nothing to rebuild. A ⌂ Main Hub button in the masthead leads back.</td></tr>
           <tr><td>v1.12</td><td>The engine now serves AMS Main Hub itself, at <b>localhost:7780/hub</b>. A browser will not let the published hub (on the web) ask this Mac for anything, so its Wealth and Finance tiles came up empty here; opened from this address the hub and the engine share one address and those tiles always fill in. This local copy is read straight from the hub's folder, so it is always the newest version and never cached.</td></tr>
           <tr><td>v1.11</td><td>The monthly checklist steps back: narrower, and dimmed to grey while resting — it wakes to full colour the moment the mouse visits. Once-a-month data shouldn't shout all month.</td></tr>
@@ -605,7 +606,7 @@
     </details>
   </div>
 
-  <footer>AMS Finance Hub v1.13 · runs locally on this Mac (port 7780) · nothing leaves the machine</footer>
+  <footer>AMS Finance Hub v1.14 · runs locally on this Mac (port 7780) · nothing leaves the machine</footer>
 </div>
 <div id="toast"></div>
 <div id="smenu"></div>

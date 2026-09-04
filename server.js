@@ -376,7 +376,9 @@ const HUB_MIME = {
 function serveHub(rel, res) {
   if (rel === "" || rel.endsWith("/")) rel += "index.html";
   // Served live from disk, so a service worker would only add a stale cached
-  // layer on top — deliberately withheld. (The page's register() call catches.)
+  // layer on top — deliberately withheld. Since hub v1.19 the page does not
+  // even ask when it is served from here, so this is the belt to that braces:
+  // it keeps any older cached copy of the page from installing one.
   if (rel === "service-worker.js") return send(res, 404, "not served locally", "text/plain");
   const file = path.resolve(HUB_DIR, rel);
   if (file !== HUB_DIR && !file.startsWith(HUB_DIR + path.sep)) {
@@ -513,6 +515,26 @@ const server = http.createServer((req, res) => {
     req.on("end", () => {
       try { send(res, 200, JSON.stringify(saveStorage(JSON.parse(body)))); }
       catch (e) { send(res, 400, JSON.stringify({ error: String(e) })); }
+    });
+    return;
+  }
+  if (url.pathname === "/api/openpath") {
+    // A file or folder the user typed into the Main Hub's Your links. Only for
+    // the hub served from this engine's own address (never the published copy),
+    // only an absolute path, and only something that exists inside the home
+    // folder or on an attached disk. Nothing is stored here — the path lives
+    // in the hub's own device storage.
+    if (!sameEngineOrigin(origin)) return send(res, 403, JSON.stringify({ ok: false, error: "not-here" }));
+    const raw = (url.searchParams.get("p") || "").trim();
+    if (!/^(\/|~\/)/.test(raw)) return send(res, 400, JSON.stringify({ ok: false, error: "outside" }));
+    const target = path.resolve(expand(raw));
+    const home = os.homedir();
+    const inside = target === home || target.startsWith(home + path.sep) || target.startsWith("/Volumes" + path.sep);
+    if (!inside) return send(res, 400, JSON.stringify({ ok: false, error: "outside" }));
+    if (!fs.existsSync(target)) return send(res, 404, JSON.stringify({ ok: false, error: "missing" }));
+    execFile("/usr/bin/open", [target], (err) => {
+      if (err) return send(res, 500, JSON.stringify({ ok: false, error: String(err) }));
+      send(res, 200, JSON.stringify({ ok: true }));
     });
     return;
   }

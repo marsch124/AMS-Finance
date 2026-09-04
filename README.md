@@ -59,4 +59,4 @@ lilac canvas.
 
 ## Version
 
-See the version log inside the app ("How this works" → Version log). Current: **v1.13**.
+See the version log inside the app ("How this works" → Version log). Current: **v1.14**.
