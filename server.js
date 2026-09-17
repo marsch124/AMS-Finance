@@ -419,6 +419,12 @@ function hubLinks() {
     spend:  { url: DASH_SPEND_URL  || null, behind: st.dashSpend.behind },
     budget: { url: DASH_BUDGET_URL || null, behind: st.dashBudget.behind },
     report: latest ? { id: "report-" + latest.month, month: latest.month } : null,
+    // folders this engine knows about, offered as places to keep a hub backup.
+    // The hub never carries these paths in its own (public) code — it only ever
+    // shows what this endpoint hands it, and that goes to the local hub alone.
+    folders: [
+      { label: "Budgeting", path: CONFIG.budgetingPath },
+    ].filter((f) => f.path && fs.existsSync(expand(f.path))),
   };
 }
 
