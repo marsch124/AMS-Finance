@@ -539,11 +539,14 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname === "/api/hubbackup" && req.method === "POST") {
-    // The Main Hub's own backup, written by this engine instead of by the browser.
-    // A browser download cannot tell the page whether the file was really saved —
-    // Safari may ask permission first and the hub would stamp "Last backup" anyway.
-    // Writing it here means the hub only records a backup once a file exists.
-    // Local hub only; nothing is kept here beyond the file itself.
+    // The Main Hub's own backup, written by this engine rather than by the browser.
+    // Two reasons: a browser download cannot ask where to save from inside an app
+    // window, and it never tells the page whether the file was written — so the hub
+    // used to stamp "Last backup" while Safari was still asking permission. Here the
+    // hub sends the name and folder he chose in its own form, and gets back the real
+    // path and the size read off the disk, so its note is a fact.
+    // A native save panel is not an option: this engine runs detached from the login
+    // session, so an osascript dialog has nowhere to draw and simply hangs.
     if (!sameEngineOrigin(origin)) return send(res, 403, JSON.stringify({ ok: false, error: "not-here" }));
     let body = "";
     req.on("data", (chunk) => {
@@ -551,26 +554,48 @@ const server = http.createServer((req, res) => {
       if (body.length > 20000000) req.destroy();
     });
     req.on("end", () => {
+      let data;
       try {
-        const data = JSON.parse(body);
-        if (!data || data.app !== "AMS Main Hub") {
-          return send(res, 400, JSON.stringify({ ok: false, error: "not-a-hub-backup" }));
-        }
-        const day = new Date().toISOString().slice(0, 10);
-        const dir = path.join(os.homedir(), "Downloads");
-        if (!fs.existsSync(dir)) return send(res, 500, JSON.stringify({ ok: false, error: "no-downloads-folder" }));
-        let file = path.join(dir, `ams-mainhub-backup-${day}.json`);
-        // never write over an earlier backup from the same day
-        for (let n = 2; fs.existsSync(file) && n < 100; n++) {
-          file = path.join(dir, `ams-mainhub-backup-${day}-${n}.json`);
-        }
+        data = JSON.parse(body);
+      } catch (e) {
+        return send(res, 400, JSON.stringify({ ok: false, error: String(e) }));
+      }
+      if (!data || data.app !== "AMS Main Hub") {
+        return send(res, 400, JSON.stringify({ ok: false, error: "not-a-hub-backup" }));
+      }
+
+      // his file name: a name only, never a path, and always .json
+      let name = path.basename((url.searchParams.get("name") || "").trim()).replace(/[/\\:]/g, "");
+      if (!name || name === "." || name === "..") name = `ams-mainhub-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      if (!/\.json$/i.test(name)) name += ".json";
+      if (name.length > 120) name = name.slice(-120);
+
+      // his folder: same rule as /api/openpath — inside the home folder or an attached disk
+      const rawDir = (url.searchParams.get("folder") || "~/Downloads").trim();
+      if (!/^(\/|~\/)/.test(rawDir) && rawDir !== "~") {
+        return send(res, 400, JSON.stringify({ ok: false, error: "outside" }));
+      }
+      const dir = path.resolve(expand(rawDir));
+      const home = os.homedir();
+      const inside = dir === home || dir.startsWith(home + path.sep) || dir.startsWith("/Volumes" + path.sep);
+      if (!inside) return send(res, 400, JSON.stringify({ ok: false, error: "outside" }));
+      if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+        return send(res, 404, JSON.stringify({ ok: false, error: "no-such-folder" }));
+      }
+
+      const file = path.join(dir, name);
+      // never quietly write over an existing backup — the hub asks him first
+      if (fs.existsSync(file) && url.searchParams.get("replace") !== "1") {
+        return send(res, 409, JSON.stringify({ ok: false, error: "exists", name, folder: dir }));
+      }
+      try {
         const tmp = file + ".tmp";
         fs.writeFileSync(tmp, body);
         fs.renameSync(tmp, file);
         const bytes = fs.statSync(file).size;   // read it back: proof, not a promise
-        send(res, 200, JSON.stringify({ ok: true, file, name: path.basename(file), bytes }));
+        send(res, 200, JSON.stringify({ ok: true, file, name, folder: dir, bytes }));
       } catch (e) {
-        send(res, 400, JSON.stringify({ ok: false, error: String(e) }));
+        send(res, 500, JSON.stringify({ ok: false, error: String(e) }));
       }
     });
     return;
