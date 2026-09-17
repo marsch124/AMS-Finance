@@ -538,6 +538,43 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
+  if (url.pathname === "/api/hubbackup" && req.method === "POST") {
+    // The Main Hub's own backup, written by this engine instead of by the browser.
+    // A browser download cannot tell the page whether the file was really saved —
+    // Safari may ask permission first and the hub would stamp "Last backup" anyway.
+    // Writing it here means the hub only records a backup once a file exists.
+    // Local hub only; nothing is kept here beyond the file itself.
+    if (!sameEngineOrigin(origin)) return send(res, 403, JSON.stringify({ ok: false, error: "not-here" }));
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+      if (body.length > 20000000) req.destroy();
+    });
+    req.on("end", () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data || data.app !== "AMS Main Hub") {
+          return send(res, 400, JSON.stringify({ ok: false, error: "not-a-hub-backup" }));
+        }
+        const day = new Date().toISOString().slice(0, 10);
+        const dir = path.join(os.homedir(), "Downloads");
+        if (!fs.existsSync(dir)) return send(res, 500, JSON.stringify({ ok: false, error: "no-downloads-folder" }));
+        let file = path.join(dir, `ams-mainhub-backup-${day}.json`);
+        // never write over an earlier backup from the same day
+        for (let n = 2; fs.existsSync(file) && n < 100; n++) {
+          file = path.join(dir, `ams-mainhub-backup-${day}-${n}.json`);
+        }
+        const tmp = file + ".tmp";
+        fs.writeFileSync(tmp, body);
+        fs.renameSync(tmp, file);
+        const bytes = fs.statSync(file).size;   // read it back: proof, not a promise
+        send(res, 200, JSON.stringify({ ok: true, file, name: path.basename(file), bytes }));
+      } catch (e) {
+        send(res, 400, JSON.stringify({ ok: false, error: String(e) }));
+      }
+    });
+    return;
+  }
   if (url.pathname === "/api/open") {
     const target = openTargets(url.searchParams.get("id") || "");
     if (!target) return send(res, 404, JSON.stringify({ ok: false, error: "unknown target" }));
