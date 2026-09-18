@@ -9,7 +9,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
-const { execFile, execFileSync } = require("child_process");
+const { execFile, execFileSync, spawn } = require("child_process");
 
 // Personal settings (paths, dashboard links) live in config.json, which stays
 // on this Mac and is never committed — see config.example.json for the shape.
@@ -601,6 +601,35 @@ const server = http.createServer((req, res) => {
           send(res, 500, JSON.stringify({ ok: false, error: String(e) }));
         }
       });
+    });
+    return;
+  }
+  if (url.pathname === "/api/sendwealth" && req.method === "POST") {
+    // "Send to Excel" on the Main Hub's wealth sheet: one month's account figures into
+    // the budget workbook. send_wealth.py does the work and touches ONLY that month's
+    // account cells (plus the row total's cached result and a recalculate-on-open flag);
+    // it finds the columns by name every time, refuses while Excel has the file open,
+    // keeps a dated copy first and reads its work back. A dryRun request only reports
+    // what it would write. Local hub only.
+    if (!sameEngineOrigin(origin)) return send(res, 403, JSON.stringify({ ok: false, error: "not-here" }));
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+      if (body.length > 200000) req.destroy();
+    });
+    req.on("end", () => {
+      const child = spawn("/usr/bin/python3", [path.join(APP_DIR, "send_wealth.py")], { timeout: 60000 });
+      let out = "", err = "";
+      child.stdout.on("data", (d) => { out += d; });
+      child.stderr.on("data", (d) => { err += d; });
+      child.on("close", () => {
+        let data;
+        try { data = JSON.parse(out); }
+        catch (e) { return send(res, 500, JSON.stringify({ ok: false, error: "sender-crashed", detail: (err || out).slice(0, 400) })); }
+        if (data && data.ok && !data.dryRun) hubCache.wealth.at = 0;   // the grey check re-reads the workbook
+        send(res, 200, JSON.stringify(data));
+      });
+      child.stdin.end(body);
     });
     return;
   }

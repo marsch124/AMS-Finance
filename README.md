@@ -77,7 +77,14 @@ lilac canvas.
    out of `~/Applications`, so it never shows up in Raycast — nobody launches it by hand.
    (`osacompile` cannot write straight into a Documents folder: build it somewhere else,
    sign it there, then copy it in with `ditto`.)
-6. Optional autostart: a LaunchAgent that opens the Engine app at login
+6. **Send to Excel** needs nothing extra: `send_wealth.py` (stdlib only, like `wealth_series.py`) is run by the
+   engine when the Main Hub's wealth sheet asks (`POST /api/sendwealth`). It writes one month's account figures
+   into the budget workbook — finding each account's column by name in the header row every time, refusing while
+   Excel has the file open (`~$` lock file), keeping a dated `… BU yyyy-mm-dd-hhmm.xlsx` copy first, and changing
+   only those cells (plus the row TOTAL's cached result and a recalculate-on-open flag). Every other part of the
+   .xlsx is copied through byte for byte, because the usual Excel libraries drop charts when they save.
+   For testing, `AMS_WORKBOOK_OVERRIDE=/path/to/a/copy.xlsx` points it at a copy instead.
+7. Optional autostart: a LaunchAgent that opens the Engine app at login
    (`~/Library/LaunchAgents/com.ams.financehub.plist`).
 
 ## Version
