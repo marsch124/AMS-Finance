@@ -68,7 +68,16 @@ lilac canvas.
    its own separate, EMPTY copy of the hub, which looks exactly like lost wealth data. Only
    if the AMS Main Hub app isn't installed does it fall back to `localhost:7780` in the
    browser. The first launch may ask for permission to read the Documents folder — click Allow.
-5. Optional autostart: a LaunchAgent that opens the Engine app at login
+5. Build **AMS Save Panel.app** the same way from `savepanel.applescript`, with bundle id
+   `com.ams.finance.savepanel` and `LSUIElement`. It is the Main Hub's backup window: when
+   *Save a backup file* is pressed on the Mac, the engine launches it (`open -W -a`) to show
+   Apple's own Save window, reads the chosen file name back, writes the backup there and
+   reads its size off the disk. It remembers the last folder in
+   `~/Library/Application Support/AMS Finance/last-backup-folder.txt`. Keep it in this folder,
+   out of `~/Applications`, so it never shows up in Raycast — nobody launches it by hand.
+   (`osacompile` cannot write straight into a Documents folder: build it somewhere else,
+   sign it there, then copy it in with `ditto`.)
+6. Optional autostart: a LaunchAgent that opens the Engine app at login
    (`~/Library/LaunchAgents/com.ams.financehub.plist`).
 
 ## Version

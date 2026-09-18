@@ -25,6 +25,11 @@ const REPORTS = path.join(FIN, "Reports");
 const SKILLS = path.join(VAULT, "Skills", "Finance");
 const BUDGETING = expand(CONFIG.budgetingPath);
 const WORKBOOK = path.join(BUDGETING, CONFIG.workbookFile);
+// the Main Hub's backups: the little app that shows Apple's Save window, and where
+// the engine keeps its request/answer notes and the last folder he chose
+const SAVE_PANEL_APP = path.join(APP_DIR, "AMS Save Panel.app");
+const SUPPORT_DIR = path.join(os.homedir(), "Library", "Application Support", "AMS Finance");
+const LAST_BACKUP_FOLDER = path.join(SUPPORT_DIR, "last-backup-folder.txt");
 const LEDGER = path.join(REPORTS, "monthly-ledger.csv");
 const DASH_DATA = path.join(REPORTS, "dashboard-data.json");
 const CHECKLIST = path.join(APP_DIR, "checklist.json");
@@ -419,12 +424,6 @@ function hubLinks() {
     spend:  { url: DASH_SPEND_URL  || null, behind: st.dashSpend.behind },
     budget: { url: DASH_BUDGET_URL || null, behind: st.dashBudget.behind },
     report: latest ? { id: "report-" + latest.month, month: latest.month } : null,
-    // folders this engine knows about, offered as places to keep a hub backup.
-    // The hub never carries these paths in its own (public) code — it only ever
-    // shows what this endpoint hands it, and that goes to the local hub alone.
-    folders: [
-      { label: "Budgeting", path: CONFIG.budgetingPath },
-    ].filter((f) => f.path && fs.existsSync(expand(f.path))),
   };
 }
 
@@ -545,14 +544,13 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (url.pathname === "/api/hubbackup" && req.method === "POST") {
-    // The Main Hub's own backup, written by this engine rather than by the browser.
-    // Two reasons: a browser download cannot ask where to save from inside an app
-    // window, and it never tells the page whether the file was written — so the hub
-    // used to stamp "Last backup" while Safari was still asking permission. Here the
-    // hub sends the name and folder he chose in its own form, and gets back the real
-    // path and the size read off the disk, so its note is a fact.
-    // A native save panel is not an option: this engine runs detached from the login
-    // session, so an osascript dialog has nowhere to draw and simply hangs.
+    // The Main Hub's backup, saved where HE chooses in Apple's own Save window.
+    // The engine asks the small "AMS Save Panel" app (built from savepanel.applescript)
+    // to show that window, because an app launched with `open` comes to the front on
+    // his screen. The window names the file and navigates anywhere; the engine then
+    // writes the backup there and reads its size back off the disk, so the hub only
+    // records a backup that really exists. The last folder he used is remembered and
+    // offered first next time.
     if (!sameEngineOrigin(origin)) return send(res, 403, JSON.stringify({ ok: false, error: "not-here" }));
     let body = "";
     req.on("data", (chunk) => {
@@ -569,40 +567,40 @@ const server = http.createServer((req, res) => {
       if (!data || data.app !== "AMS Main Hub") {
         return send(res, 400, JSON.stringify({ ok: false, error: "not-a-hub-backup" }));
       }
+      if (!fs.existsSync(SAVE_PANEL_APP)) {
+        return send(res, 500, JSON.stringify({ ok: false, error: "no-save-panel" }));
+      }
+      fs.mkdirSync(SUPPORT_DIR, { recursive: true });
+      const reqFile = path.join(SUPPORT_DIR, "savepanel-request.txt");
+      const resFile = path.join(SUPPORT_DIR, "savepanel-result.txt");
+      const suggested = `ams-mainhub-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const isDir = (d) => { try { return fs.statSync(d).isDirectory(); } catch (e) { return false; } };
+      let start = "";
+      try { start = fs.readFileSync(LAST_BACKUP_FOLDER, "utf8").trim(); } catch (e) { /* first time */ }
+      if (!isDir(start)) start = isDir(BUDGETING) ? BUDGETING : path.join(os.homedir(), "Downloads");
+      fs.writeFileSync(reqFile, suggested + "\n" + start + "\n");
+      try { fs.unlinkSync(resFile); } catch (e) { /* none yet */ }
 
-      // his file name: a name only, never a path, and always .json
-      let name = path.basename((url.searchParams.get("name") || "").trim()).replace(/[/\\:]/g, "");
-      if (!name || name === "." || name === "..") name = `ams-mainhub-backup-${new Date().toISOString().slice(0, 10)}.json`;
-      if (!/\.json$/i.test(name)) name += ".json";
-      if (name.length > 120) name = name.slice(-120);
-
-      // his folder: same rule as /api/openpath — inside the home folder or an attached disk
-      const rawDir = (url.searchParams.get("folder") || "~/Downloads").trim();
-      if (!/^(\/|~\/)/.test(rawDir) && rawDir !== "~") {
-        return send(res, 400, JSON.stringify({ ok: false, error: "outside" }));
-      }
-      const dir = path.resolve(expand(rawDir));
-      const home = os.homedir();
-      const inside = dir === home || dir.startsWith(home + path.sep) || dir.startsWith("/Volumes" + path.sep);
-      if (!inside) return send(res, 400, JSON.stringify({ ok: false, error: "outside" }));
-      if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
-        return send(res, 404, JSON.stringify({ ok: false, error: "no-such-folder" }));
-      }
-
-      const file = path.join(dir, name);
-      // never quietly write over an existing backup — the hub asks him first
-      if (fs.existsSync(file) && url.searchParams.get("replace") !== "1") {
-        return send(res, 409, JSON.stringify({ ok: false, error: "exists", name, folder: dir }));
-      }
-      try {
-        const tmp = file + ".tmp";
-        fs.writeFileSync(tmp, body);
-        fs.renameSync(tmp, file);
-        const bytes = fs.statSync(file).size;   // read it back: proof, not a promise
-        send(res, 200, JSON.stringify({ ok: true, file, name, folder: dir, bytes }));
-      } catch (e) {
-        send(res, 500, JSON.stringify({ ok: false, error: String(e) }));
-      }
+      // -W waits until he has answered the window and the little app has quit
+      execFile("/usr/bin/open", ["-W", "-a", SAVE_PANEL_APP], { timeout: 900000 }, () => {
+        let answer = "";
+        try { answer = fs.readFileSync(resFile, "utf8").trim(); } catch (e) { /* closed without answering */ }
+        if (!answer || answer === "CANCELLED") {
+          return send(res, 200, JSON.stringify({ ok: false, error: "cancelled" }));
+        }
+        let file = answer;
+        if (!/\.json$/i.test(file)) file += ".json";
+        try {
+          const tmp = file + ".tmp";
+          fs.writeFileSync(tmp, body);
+          fs.renameSync(tmp, file);
+          const bytes = fs.statSync(file).size;   // read it back: proof, not a promise
+          fs.writeFileSync(LAST_BACKUP_FOLDER, path.dirname(file));
+          send(res, 200, JSON.stringify({ ok: true, file, name: path.basename(file), folder: path.dirname(file), bytes }));
+        } catch (e) {
+          send(res, 500, JSON.stringify({ ok: false, error: String(e) }));
+        }
+      });
     });
     return;
   }
