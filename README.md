@@ -50,10 +50,24 @@ lilac canvas.
 2. Copy `config.example.json` to `config.json` and fill in your paths and links.
 3. Build the two apps (Terminal, from this folder):
    `osacompile -o "AMS Finance.app" launcher.applescript` and
-   `osacompile -o "AMS Finance Engine.app" engine.applescript`
-4. Double-click **AMS Finance.app**. It opens AMS Main Hub, served by the engine at
-   `localhost:7780`; the Finance Hub is a card on its FINANCE shelf (`localhost:7780/finance`).
-   The first launch asks for permission to read the Documents folder — click Allow.
+   `osacompile -o "AMS Finance Engine.app" engine.applescript`.
+   A bare `osacompile` bundle has no identity macOS can grant permissions to and the
+   generic script icon, so after building **AMS Finance.app**:
+   ```
+   /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.ams.finance.hub" "AMS Finance.app/Contents/Info.plist"
+   /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "AMS Finance.app/Contents/Info.plist"   # never in the Dock
+   rm -f "AMS Finance.app/Contents/Resources/Assets.car"                                            # or the icon is ignored
+   /usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" "AMS Finance.app/Contents/Info.plist"
+   cp <your applet.icns> "AMS Finance.app/Contents/Resources/applet.icns"
+   xattr -cr "AMS Finance.app" && codesign --force --deep --sign - "AMS Finance.app"
+   ```
+4. Double-click **AMS Finance.app**. It starts the engine if it isn't running, then opens
+   the **AMS Main Hub app** (the web app added to the Dock from `localhost:7780/hub/`); the
+   Finance Hub is a card on its FINANCE shelf (`localhost:7780/finance`). It deliberately
+   never opens a browser tab: a tab — like any second web app on the same address — keeps
+   its own separate, EMPTY copy of the hub, which looks exactly like lost wealth data. Only
+   if the AMS Main Hub app isn't installed does it fall back to `localhost:7780` in the
+   browser. The first launch may ask for permission to read the Documents folder — click Allow.
 5. Optional autostart: a LaunchAgent that opens the Engine app at login
    (`~/Library/LaunchAgents/com.ams.financehub.plist`).
 
