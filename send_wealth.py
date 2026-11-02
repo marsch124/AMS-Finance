@@ -87,7 +87,14 @@ def cell_ref(cell_xml):
 def cell_attr(cell_xml, name):
     head = re.match(r"<c\b[^>]*?(?=/?>)", cell_xml).group(0)
     m = re.search(r'\b%s="([^"]*)"' % name, head)
-    return m.group(1) if m else None
+    v = m.group(1) if m else None
+    # A plain number may be written either with no type at all or with t="n" —
+    # Excel and LibreOffice disagree, and his budget workbook spells it out.
+    # Reporting "n" as "no type" keeps every "is this a plain number?" test
+    # honest; that test is what finds the month's date cell, and taking t="n"
+    # at face value made Send to Excel fail with "no-month-row" on his real
+    # workbook (found 2026-11-02, before his first real send).
+    return None if (name == "t" and v == "n") else v
 
 
 def cell_value(cell_xml, shared):

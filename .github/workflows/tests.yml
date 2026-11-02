@@ -1,0 +1,20 @@
+name: Tests
+
+# The scripts that read and WRITE his budget workbook. These run on every push.
+# Nothing here touches the real workbook: each test builds its own little one.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run the wealth tests
+        run: python3 tests/test_wealth.py -v
