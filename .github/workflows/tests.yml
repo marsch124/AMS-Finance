@@ -16,5 +16,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Settings for the test run
+        # config.json holds his real paths and is never published, so the tests
+        # run against the example one. Every test points the scripts at its own
+        # throwaway workbook anyway (AMS_WORKBOOK_OVERRIDE).
+        run: cp config.example.json config.json
       - name: Run the wealth tests
         run: python3 tests/test_wealth.py -v
