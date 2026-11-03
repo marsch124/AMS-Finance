@@ -139,6 +139,24 @@ def find_layout(cells):
             used.add(scored[0][1])
     if not acc_cols:
         return None
+
+    # Grow the block sideways over neighbouring headers that are plainly part of
+    # it. A renamed account ("ISK" -> "Swedb ISK") no longer matches by name, and
+    # leaving it out quietly understated the whole month: November 2026 read
+    # 4,431,000 instead of 7,763,000, the ISK column's 3,332,000 simply missing.
+    # Stops at "total", at "done" and at the first gap, so nothing is counted twice.
+    def part_of_block(col):
+        t = by_col.get(col)
+        return bool(t) and norm(t) not in ("total", "done") and col not in used
+    num_to_col = {col_to_num(c): c for c in by_col}
+    for step in (-1, 1):
+        edge = (min if step < 0 else max)(col_to_num(c) for c in acc_cols)
+        n = edge + step
+        while n in num_to_col and part_of_block(num_to_col[n]):
+            acc_cols.append(num_to_col[n])
+            used.add(num_to_col[n])
+            n += step
+
     first_acc = min(col_to_num(c) for c in acc_cols)
     total_col = next((col for col, t in headers if norm(t) == "total"), None)
 

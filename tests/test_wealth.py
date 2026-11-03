@@ -94,6 +94,21 @@ class ReadingTheSeries(TempBook):
         s = read_series(self.book())["series"]
         self.assertIsNone(s[3]["value"], "an untyped month must be null, not a number")
 
+    def test_a_renamed_account_is_still_counted(self):
+        """THE BUG (2026-11-03): he renamed the workbook's "ISK" column to
+        "Swedb ISK". Send to Excel wrote all six figures correctly, but the
+        series reader only knew the old names, so it left that column out and
+        reported November as 4,431,000 instead of 7,763,000 — a wrong number
+        shown under his wealth total, with nothing to say it was wrong."""
+        renamed = ("Swedb ISK", "Snabbspar", "Strivo", "Saab-aktier",
+                   "Nordnet", "Avanza")
+        book = self.book(accounts=renamed)
+        figures = [(renamed[i], 100000 * (i + 1)) for i in range(len(renamed))]
+        self.assertTrue(send(book, "2026-10", figures)["ok"])
+        s = read_series(book)["series"]
+        oct_ = next(p for p in s if p["month"] == "2026-10")
+        self.assertEqual(oct_["value"], sum(kr for _, kr in figures))
+
     def test_says_so_when_there_is_no_block_at_all(self):
         """rather than returning plausible nonsense, as it did for weeks"""
         d = tempfile.mkdtemp()
